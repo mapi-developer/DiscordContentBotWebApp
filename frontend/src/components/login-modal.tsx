@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
-import { SiGoogle, SiGithub } from "react-icons/si";
+import { SiGoogle, SiGithub, SiDiscord } from "react-icons/si";
 
 type Props = { open: boolean; onClose: () => void; onOpenRegister?: () => void };
 
@@ -16,6 +16,7 @@ export default function LoginModal({ open, onClose, onOpenRegister }: Props) {
     const [error, setError] = useState<string | null>(null);
 
     const startedOnBackdrop = useRef(false);
+    const [redirecting, setRedirecting] = useState(false);
 
     // Close on ESC
     useEffect(() => {
@@ -187,6 +188,20 @@ export default function LoginModal({ open, onClose, onOpenRegister }: Props) {
                     >
                         <SiGithub size={18} className="shrink-0" aria-hidden />
                         <span className="leading-none">Continue with GitHub</span>
+                    </button>
+
+                    <button
+                        onClick={() => {
+                            setRedirecting(true);
+                            const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+                            const next = typeof window !== "undefined" ? window.location.pathname : "/";
+                            window.location.href = `${api}/auth/discord/login?next=${encodeURIComponent(next)}`;
+                        }}
+                        disabled={redirecting}
+                        className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15 transition disabled:opacity-60 flex items-center justify-center gap-2"
+                    >
+                        <SiDiscord size={18} />
+                        {redirecting ? "Redirecting..." : "Sign in with Discord"}
                     </button>
                 </div>
 

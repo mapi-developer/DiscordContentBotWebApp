@@ -1,41 +1,17 @@
 repos:
-  - repo: https://github.com/commitizen-tools/commitizen
-    rev: v4.9.1
-    hooks:
-      - id: commitizen
-        language_version: "python3.13"
-        stages: ["commit-msg"]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v6.0.0
+    rev: v4.4.0
     hooks:
-    - id: trailing-whitespace
-    - id: end-of-file-fixer
-    - id: check-yaml
-    - id: check-added-large-files
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.14.2
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+
+  - repo: https://github.com/charliermarsh/ruff-pre-commit
+    rev: latest
     hooks:
-      # run the Ruff linter
       - id: ruff
         args: [--fix]
-      # run the Ruff formatter
-      - id: ruff-format
-  - repo: local
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.3.0
     hooks:
       - id: mypy
-        name: Run mypy
-        entry: python -m mypy
-        additional_dependencies: [
-          "mypy==1.18.2",
-          "fastapi==0.120.0",
-          "pydantic>=2.0",
-          "pydantic-settings>=2.11.0",
-          "bson>=0.5.10",
-          "pymongo>=4.4.0",
-          "motor>=3.7.1"
-        ]
-        exclude: settings.py
-        language: python
-        language_version: python3.13
-        types: ["python"]
-        require_serial: true

@@ -1,28 +1,30 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
-from motor.motor_asyncio import AsyncIOMotorDatabase
+from fastapi.middleware.cors import CORSMiddleware
 
-from .api.views import router as api_router
-from .db.utils import get_mongodb
+from .api.auth.discord import router as discord_router
+from .core.settings import settings
+from .db.mongo import get_db
 
+app = FastAPI(title="DiscordContentBotWebApp API")
 
-class AppWithMongo(FastAPI):
-    mongodb: AsyncIOMotorDatabase
-
-
-@asynccontextmanager
-async def lifespan(app: AppWithMongo):
-    mongodb = get_mongodb()
-    app.mongodb = mongodb
-    yield
-    app.mongodb.close()
-
-
-app = AppWithMongo(lifespan=lifespan)
-app.include_router(api_router)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
-@app.get("/")
-async def read_root() -> dict:
-    return {"message": "Welcome to the FastAPI application!"}
+@app.get("/health")
+async def health():
+    return {"ok": True}
+
+
+app.include_router(discord_router)
+
+
+@app.on_event("startup")
+async def init_indexes():
+    db = get_db()
+    await db["users"].create_index("discord.id", unique=True)

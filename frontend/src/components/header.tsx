@@ -2,6 +2,7 @@
 import Link from "next/link";
 import LoginModal from "./login-modal";
 import RegisterModal from "./register-modal";
+import { SiDiscord } from "react-icons/si";
 import { useState } from "react";
 
 export default function Header() {
@@ -11,6 +12,7 @@ export default function Header() {
         setLoginOpen(false);
         setRegisterOpen(true);
     };
+    const [redirecting, setRedirecting] = useState(false);
 
     return (
         <>
@@ -21,7 +23,7 @@ export default function Header() {
                         <span className="font-semibold tracking-tight group-hover:opacity-90">Albion Content Bot</span>
                     </Link>
                     <nav className="flex items-center gap-2">
-                        {/* If you want signup to be separate later, keep the link below. For now, it can also open the modal. */}
+                        {/*
                         <button
                             onClick={() => setRegisterOpen(true)}
                             className="rounded-lg px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 border border-white/10 transition"
@@ -33,6 +35,20 @@ export default function Header() {
                             className="rounded-lg px-3 py-2 text-sm font-semibold bg-[#7c9bff] hover:bg-[#6a85e0] text-black transition"
                         >
                             Sign in
+                        </button>
+                        */}
+                        <button
+                            onClick={() => {
+                                setRedirecting(true);
+                                const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+                                const next = typeof window !== "undefined" ? window.location.pathname : "/";
+                                window.location.href = `${api}/auth/discord/login?next=${encodeURIComponent(next)}`;
+                            }}
+                            disabled={redirecting}
+                            className="w-full rounded-xl border border-white/10 bg-[#074ab5] px-4 py-3 text-sm font-semibold hover:bg-[#0960eb] transition disabled:opacity-60 flex items-center justify-center gap-2"
+                        >
+                            <SiDiscord size={18} />
+                            {redirecting ? "Redirecting..." : "Log in with Discord"}
                         </button>
                     </nav>
                 </div>
@@ -47,6 +63,7 @@ export default function Header() {
                 open={registerOpen}
                 onClose={() => setRegisterOpen(false)}
             />
+
         </>
     );
 }

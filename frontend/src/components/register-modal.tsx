@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
-import { SiGoogle, SiGithub } from "react-icons/si";
+import { SiGoogle, SiGithub, SiDiscord } from "react-icons/si";
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -155,6 +155,15 @@ export default function RegisterModal({ open, onClose }: Props) {
                     >
                         <SiGithub size={18} className="shrink-0" aria-hidden />
                         <span className="leading-none">Continue with GitHub</span>
+                    </button>
+
+                    <button
+                        onClick={() => signIn("discord")}
+                        className="w-full inline-flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15 transition"
+                        aria-label="Continue with Discord"
+                    >
+                        <SiDiscord size={18} className="shrink-0" aria-hidden />
+                        <span className="leading-none">Continue with Discord</span>
                     </button>
                 </div>
 
