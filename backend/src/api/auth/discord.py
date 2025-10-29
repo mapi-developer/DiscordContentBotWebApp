@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timezone
 
 import httpx
@@ -13,6 +14,10 @@ router = APIRouter(prefix="/auth/discord", tags=["auth"])
 DISCORD_AUTHORIZE = "https://discord.com/api/oauth2/authorize"
 DISCORD_TOKEN = "https://discord.com/api/oauth2/token"
 DISCORD_ME = "https://discord.com/api/users/@me"
+
+FRONTEND_ORIGIN = os.getenv("FRONTEND_ORIGIN", "http://localhost:3000")
+SESSION_COOKIE_NAME = os.getenv("SESSION_COOKIE_NAME", "session")
+SESSION_COOKIE_DOMAIN = os.getenv("SESSION_COOKIE_DOMAIN")  # optional, e.g. ".yourdomain.com"
 
 
 @router.get("/login")
@@ -87,7 +92,7 @@ async def callback(
     jwt_token = create_jwt(sub=str(discord_id))
     # allow setting cookie on localhost http; for prod keep secure=True
     response = RedirectResponse(
-        settings.FRONTEND_SUCCESS_URL + (f"?{state}" if state else "")
+        settings.FRONTEND_ORIGIN
     )
     response.set_cookie(
         key="session",
@@ -102,9 +107,14 @@ async def callback(
 
 
 @router.post("/logout")
-async def logout():
-    resp = RedirectResponse(settings.FRONTEND_SUCCESS_URL)
-    resp.delete_cookie("session", path="/")
+async def logout(request: Request):
+    request.session.clear()
+    resp = RedirectResponse(url=settings.FRONTEND_ORIGIN, status_code=303)
+    resp.delete_cookie(
+        key=settings.SESSION_COOKIE_NAME,
+        path="/",
+        domain=settings.SESSION_COOKIE_DOMAIN or None,
+    )
     return resp
 
 

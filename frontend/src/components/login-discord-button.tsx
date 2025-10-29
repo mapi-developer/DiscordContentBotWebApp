@@ -74,7 +74,7 @@ export default function LogInDiscordButton() {
             />
             <span className="text-sm">{displayName}</span>
             <form
-                action={`${API_BASE}/auth/logout`}
+                action={`${API_BASE}/auth/discord/logout`}
                 method="post"
             >
                 <button
