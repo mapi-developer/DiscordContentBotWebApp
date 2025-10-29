@@ -7,6 +7,10 @@ import { useState } from "react";
 export default function Header() {
     const [loginOpen, setLoginOpen] = useState(false);
     const [registerOpen, setRegisterOpen] = useState(false);
+    const openRegisterFromLogin = () => {
+        setLoginOpen(false);
+        setRegisterOpen(true);
+    };
 
     return (
         <>
@@ -34,8 +38,15 @@ export default function Header() {
                 </div>
             </header>
 
-            <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-            <RegisterModal open={registerOpen} onClose={() => setRegisterOpen(false)} />
+            <LoginModal
+                open={loginOpen}
+                onClose={() => setLoginOpen(false)}
+                onOpenRegister={openRegisterFromLogin}
+            />
+            <RegisterModal
+                open={registerOpen}
+                onClose={() => setRegisterOpen(false)}
+            />
         </>
     );
 }

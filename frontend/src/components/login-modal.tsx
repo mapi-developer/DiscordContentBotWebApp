@@ -3,12 +3,9 @@ import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 import { SiGoogle, SiGithub } from "react-icons/si";
 
-type Props = {
-    open: boolean;
-    onClose: () => void;
-};
+type Props = { open: boolean; onClose: () => void; onOpenRegister?: () => void };
 
-export default function LoginModal({ open, onClose }: Props) {
+export default function LoginModal({ open, onClose, onOpenRegister }: Props) {
     const backdropRef = useRef<HTMLDivElement | null>(null);
     const panelRef = useRef<HTMLDivElement | null>(null);
 
@@ -194,7 +191,14 @@ export default function LoginModal({ open, onClose }: Props) {
                 </div>
 
                 <div className="mt-5 text-xs text-[#7f8ba0]">
-                    New here? <a href="#" className="underline">Create an account</a>
+                    New here?{" "}
+                    <button
+                        type="button"
+                        onClick={() => { onClose(); onOpenRegister?.(); }}
+                        className="underline underline-offset-2 hover:text-[#c7d2e6]"
+                    >
+                        Create an account
+                    </button>
                 </div>
             </div>
         </div>
