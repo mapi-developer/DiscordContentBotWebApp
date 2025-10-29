@@ -6,7 +6,7 @@ repos:
       - id: end-of-file-fixer
 
   - repo: https://github.com/charliermarsh/ruff-pre-commit
-    rev: latest
+    rev: v0.9.9
     hooks:
       - id: ruff
         args: [--fix]

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import LoginModal from "./login-modal";
 import RegisterModal from "./register-modal";
-import { SiDiscord } from "react-icons/si";
+import LogInDiscordButton from "@/src/components/login-discord-button";
 import { useState } from "react";
 
 export default function Header() {
@@ -12,7 +12,6 @@ export default function Header() {
         setLoginOpen(false);
         setRegisterOpen(true);
     };
-    const [redirecting, setRedirecting] = useState(false);
 
     return (
         <>
@@ -37,19 +36,7 @@ export default function Header() {
                             Sign in
                         </button>
                         */}
-                        <button
-                            onClick={() => {
-                                setRedirecting(true);
-                                const api = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
-                                const next = typeof window !== "undefined" ? window.location.pathname : "/";
-                                window.location.href = `${api}/auth/discord/login?next=${encodeURIComponent(next)}`;
-                            }}
-                            disabled={redirecting}
-                            className="w-full rounded-xl border border-white/10 bg-[#074ab5] px-4 py-3 text-sm font-semibold hover:bg-[#0960eb] transition disabled:opacity-60 flex items-center justify-center gap-2"
-                        >
-                            <SiDiscord size={18} />
-                            {redirecting ? "Redirecting..." : "Log in with Discord"}
-                        </button>
+                        <LogInDiscordButton />
                     </nav>
                 </div>
             </header>
