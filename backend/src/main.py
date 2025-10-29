@@ -45,3 +45,4 @@ app.include_router(groups_router)
 async def init_indexes():
     db = get_db()
     await db["users"].create_index("discord.id", unique=True)
+    await db["groups"].create_index("id", unique=True)
