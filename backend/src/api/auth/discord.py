@@ -41,7 +41,7 @@ async def callback(
     state: str | None = None,
     db=Depends(get_db),
 ):
-    # 1) Exchange code for tokens
+    print("LOL")
     data = {
         "client_id": settings.DISCORD_CLIENT_ID,
         "client_secret": settings.DISCORD_CLIENT_SECRET,
@@ -122,4 +122,5 @@ async def me(request: Request, db=Depends(get_db)):
     user = await db["users"].find_one({"discord.id": discord_id}, {"_id": 0})
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+
     return {"user": user}

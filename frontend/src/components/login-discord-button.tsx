@@ -5,11 +5,27 @@ import { API_BASE, getMe } from "@/src/lib/api";
 import { SiDiscord } from "react-icons/si";
 
 type Me = {
-    id: string;
-    username: string;
-    global_name?: string | null;
-    avatar_url?: string | null;
+    user: {
+        created_at: string,
+        discord: {
+            avatar: string,
+            email: string,
+            global_name: string,
+            id: string,
+            username: string
+        },
+        updated_at: string
+    }
 };
+
+function discordAvatarUrl(userId: string, avatarId?: string | null, size: 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 = 64) {
+  if (avatarId) {
+    const ext = avatarId.startsWith("a_") ? "gif" : "png";
+    return `https://cdn.discordapp.com/avatars/${userId}/${avatarId}.${ext}?size=${size}`;
+  }
+  // default avatar (generic)
+  return "https://cdn.discordapp.com/embed/avatars/0.png";
+}
 
 export default function LogInDiscordButton() {
     const [me, setMe] = useState<Me | null>(null);
@@ -47,14 +63,16 @@ export default function LogInDiscordButton() {
         );
     }
 
+    const avatarUrl = discordAvatarUrl(me.user.discord.id, me.user.discord.avatar, 128);
+    const displayName = me.user.discord.global_name || me.user.discord.username || "User";
+
     return (
         <div className="flex items-center gap-3">
             <img
-                src={me.avatar_url ?? ""}
-                alt={me.global_name ?? me.username}
-                className="h-9 w-9 rounded-full border"
+                src={avatarUrl}
+                className="h-8 w-8 rounded-full border"
             />
-            <span className="text-sm">{me.global_name ?? me.username}</span>
+            <span className="text-sm">{displayName}</span>
             <form
                 action={`${API_BASE}/auth/logout`}
                 method="post"
