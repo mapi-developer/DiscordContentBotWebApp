@@ -17,10 +17,21 @@ export default function Header() {
         <>
             <header className="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-[#0b0f17]/70">
                 <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
-                    <Link href="/" className="group inline-flex items-center gap-2">
-                        <Logo />
-                        <span className="font-semibold tracking-tight group-hover:opacity-90">Albion Content Bot</span>
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <Link href="/" className="group inline-flex items-center gap-2">
+                            <Logo />
+                            <span className="font-semibold tracking-tight group-hover:opacity-90">
+                                Albion Content Bot
+                            </span>
+                        </Link>
+                        <div></div>
+                        <button
+                            className="rounded-md px-3 py-1.5 text-sm font-semibold bg-[#101730] hover:bg-[#1d2852] border border-[#131b38] transition"
+                        >
+                            Groups
+                        </button>
+                    </div>
+
                     <nav className="flex items-center gap-2">
                         {/*
                         <button
@@ -40,6 +51,7 @@ export default function Header() {
                     </nav>
                 </div>
             </header>
+
 
             <LoginModal
                 open={loginOpen}
