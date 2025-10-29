@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
-import { SiGoogle, SiGithub } from "react-icons/si";
 
 type Props = {
     open: boolean;
@@ -176,20 +175,15 @@ export default function LoginModal({ open, onClose }: Props) {
                 <div className="space-y-3">
                     <button
                         onClick={() => signIn("google")}
-                        className="w-full inline-flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15 transition"
-                        aria-label="Continue with Google"
+                        className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15 transition"
                     >
-                        <SiGoogle size={18} className="shrink-0" aria-hidden />
-                        <span className="leading-none">Continue with Google</span>
+                        Google
                     </button>
-
                     <button
                         onClick={() => signIn("github")}
-                        className="w-full inline-flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15 transition"
-                        aria-label="Continue with GitHub"
+                        className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-3 text-sm font-semibold hover:bg-white/15 transition"
                     >
-                        <SiGithub size={18} className="shrink-0" aria-hidden />
-                        <span className="leading-none">Continue with GitHub</span>
+                        GitHub
                     </button>
                 </div>
 
