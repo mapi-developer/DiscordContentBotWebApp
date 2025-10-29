@@ -45,10 +45,11 @@ select = [
 ]
 
 [[tool.mypy.overrides]]
-module = ["untyped_package.*"]
-follow_untyped_imports = true
+module = ["foobar.*"]
+ignore_missing_imports = true
 
 [tool.mypy]
+disable_error_code = ["import-untyped"]
 python_version = "3.13"
 strict = true
 mypy_path = "./src/"
