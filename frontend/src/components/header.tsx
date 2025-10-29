@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
 import LoginModal from "./login-modal";
+import RegisterModal from "./register-modal";
 import { useState } from "react";
 
 export default function Header() {
     const [loginOpen, setLoginOpen] = useState(false);
+    const [registerOpen, setRegisterOpen] = useState(false);
 
     return (
         <>
@@ -17,7 +19,7 @@ export default function Header() {
                     <nav className="flex items-center gap-2">
                         {/* If you want signup to be separate later, keep the link below. For now, it can also open the modal. */}
                         <button
-                            onClick={() => setLoginOpen(true)}
+                            onClick={() => setRegisterOpen(true)}
                             className="rounded-lg px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 border border-white/10 transition"
                         >
                             Sign up
@@ -33,6 +35,7 @@ export default function Header() {
             </header>
 
             <LoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+            <RegisterModal open={registerOpen} onClose={() => setRegisterOpen(false)} />
         </>
     );
 }
