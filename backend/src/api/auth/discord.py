@@ -46,7 +46,6 @@ async def callback(
     state: str | None = None,
     db=Depends(get_db),
 ):
-    print("LOL")
     data = {
         "client_id": settings.DISCORD_CLIENT_ID,
         "client_secret": settings.DISCORD_CLIENT_SECRET,

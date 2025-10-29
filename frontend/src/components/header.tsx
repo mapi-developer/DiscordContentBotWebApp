@@ -29,15 +29,15 @@ export default function Header() {
                             onClick={() => {
                                 window.location.href = `/groups`;
                             }}
-                            className="rounded-md px-3 py-1.5 text-sm font-semibold bg-[#101730] hover:bg-[#1d2852] border border-[#131b38] transition"
+                            className="rounded-md px-3 py-1.5 text-sm font-semibold bg-[#19244d] hover:bg-[#1a2b69] border border-[#253159] transition"
                         >
                             Groups
                         </button>
                     </div>
 
                     <nav className="flex items-center gap-2">
-                        {/*
-                        <button
+
+                        {/* <button
                             onClick={() => setRegisterOpen(true)}
                             className="rounded-lg px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 border border-white/10 transition"
                         >
@@ -48,8 +48,8 @@ export default function Header() {
                             className="rounded-lg px-3 py-2 text-sm font-semibold bg-[#7c9bff] hover:bg-[#6a85e0] text-black transition"
                         >
                             Sign in
-                        </button>
-                        */}
+                        </button> */}
+
                         <LogInDiscordButton />
                     </nav>
                 </div>
