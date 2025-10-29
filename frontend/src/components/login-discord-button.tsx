@@ -55,10 +55,10 @@ export default function LogInDiscordButton() {
                     window.location.href = `${api}/auth/discord/login?next=${encodeURIComponent(next)}`;
                 }}
                 disabled={redirecting}
-                className="w-full rounded-xl border border-white/10 bg-[#074ab5] px-4 py-3 text-sm font-semibold hover:bg-[#0960eb] transition disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full rounded-md border border-white/10 bg-[#074ab5] px-2 py-1.5 text-sm font-semibold hover:bg-[#0960eb] transition disabled:opacity-60 flex items-center justify-center gap-2"
             >
+                {redirecting ? "Redirecting..." : "Log in"}
                 <SiDiscord size={18} />
-                {redirecting ? "Redirecting..." : "Log in with Discord"}
             </button>
         );
     }

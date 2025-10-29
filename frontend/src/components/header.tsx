@@ -26,6 +26,9 @@ export default function Header() {
                         </Link>
                         <div></div>
                         <button
+                            onClick={() => {
+                                window.location.href = `/groups`;
+                            }}
                             className="rounded-md px-3 py-1.5 text-sm font-semibold bg-[#101730] hover:bg-[#1d2852] border border-[#131b38] transition"
                         >
                             Groups
