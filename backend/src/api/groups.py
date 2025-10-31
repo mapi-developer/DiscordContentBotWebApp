@@ -10,7 +10,7 @@ from pymongo.errors import DuplicateKeyError
 from ..db.mongo import get_db
 from ..schemas import GroupDB, GroupIn, GroupOut, GroupUpdate
 
-router = APIRouter()
+router = APIRouter(prefix="/groups", tags=["auth"])
 
 def _clean(s: Optional[str]) -> Optional[str]:
     if s is None:
@@ -18,7 +18,7 @@ def _clean(s: Optional[str]) -> Optional[str]:
     s = s.strip()
     return s or None
 
-@router.get("/groups", response_model=List[GroupOut])
+@router.get("", response_model=List[GroupOut])
 async def list_groups(db: AsyncIOMotorDatabase = Depends(get_db)):
     cursor = (
         db["groups"]
@@ -31,21 +31,17 @@ async def list_groups(db: AsyncIOMotorDatabase = Depends(get_db)):
         out.append(GroupOut.from_db(db_model))
     return out
 
-@router.post("/groups", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
 async def create_group(payload: GroupIn, db: AsyncIOMotorDatabase = Depends(get_db)):
     db_model = GroupDB(
         name=payload.name.strip(),
-        description=_clean(payload.description),
+        description=(payload.description.strip() if payload.description else None),
     )
-    try:
-        res = await db["groups"].insert_one(db_model.model_dump(by_alias=True))
-    except DuplicateKeyError:
-        raise HTTPException(status_code=409, detail="Group name already exists")
-
+    res = await db["groups"].insert_one(db_model.model_dump(by_alias=True))
     inserted = await db["groups"].find_one({"_id": res.inserted_id})
     return GroupOut.from_db(GroupDB.model_validate(inserted))
 
-@router.get("/groups/{group_id}", response_model=GroupOut)
+@router.get("/{group_id}", response_model=GroupOut)
 async def get_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
     if not ObjectId.is_valid(group_id):
         raise HTTPException(status_code=400, detail="Invalid group id")
@@ -54,7 +50,7 @@ async def get_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Group not found")
     return GroupOut.from_db(GroupDB.model_validate(doc))
 
-@router.patch("/groups/{group_id}", response_model=GroupOut)
+@router.patch("/{group_id}", response_model=GroupOut)
 async def update_group(group_id: str, patch: GroupUpdate, db: AsyncIOMotorDatabase = Depends(get_db)):
     if not ObjectId.is_valid(group_id):
         raise HTTPException(status_code=400, detail="Invalid group id")
@@ -83,7 +79,7 @@ async def update_group(group_id: str, patch: GroupUpdate, db: AsyncIOMotorDataba
         raise HTTPException(status_code=404, detail="Group not found")
     return GroupOut.from_db(GroupDB.model_validate(doc))
 
-@router.delete("/groups/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
     if not ObjectId.is_valid(group_id):
         raise HTTPException(status_code=400, detail="Invalid group id")
@@ -91,3 +87,10 @@ async def delete_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Group not found")
     return
+
+@router.get("/by-uuid/{uuid}", response_model=GroupOut)
+async def get_group_by_uuid(uuid: str, db: AsyncIOMotorDatabase = Depends(get_db)):
+    doc = await db["groups"].find_one({"uuid": uuid})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Group not found")
+    return GroupOut.from_db(GroupDB.model_validate(doc))

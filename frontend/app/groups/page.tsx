@@ -10,17 +10,15 @@ export default async function GroupsPage() {
   const groups = r.ok ? await r.json() : [];
 
   return (
-    <main className="mx-auto max-w-5xl px-6 py-8">
-      <header className="mb-6 flex items-center justify-between">
+    <main className="mx-auto max-w-5xl px-6 py-2">
+      <Link href="/" className="hover:underline">← Back to Home</Link>
+
+      <div className="mb-6 flex items-center justify-between py-2">
         <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
         <AddGroup />
-      </header>
+      </div>
 
       <GroupsList initialGroups={groups} />
-
-      <footer className="mt-10 text-sm text-white/50">
-        <Link href="/" className="hover:underline">← Back to Home</Link>
-      </footer>
     </main>
   );
 }

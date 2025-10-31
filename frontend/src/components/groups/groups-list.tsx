@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 type Group = {
   id: string;
+  uuid: string;
   name: string;
   description?: string | null;
   created_at?: string;
@@ -44,7 +45,7 @@ export default function GroupsList({ initialGroups }: { initialGroups: Group[] }
   return (
     <div className="grid gap-4 sm:grid-cols-2">
       {groups.map((g) => (
-        <div key={g.id} className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <div key={g.uuid} className="rounded-xl border border-white/10 bg-white/5 p-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 className="font-medium">{g.name}</h3>

@@ -36,20 +36,6 @@ export default function Header() {
                     </div>
 
                     <nav className="flex items-center gap-2">
-
-                        {/* <button
-                            onClick={() => setRegisterOpen(true)}
-                            className="rounded-lg px-3 py-2 text-sm font-semibold bg-white/10 hover:bg-white/15 border border-white/10 transition"
-                        >
-                            Sign up
-                        </button>
-                        <button
-                            onClick={() => setLoginOpen(true)}
-                            className="rounded-lg px-3 py-2 text-sm font-semibold bg-[#7c9bff] hover:bg-[#6a85e0] text-black transition"
-                        >
-                            Sign in
-                        </button> */}
-
                         <LogInDiscordButton />
                     </nav>
                 </div>

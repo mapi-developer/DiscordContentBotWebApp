@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Optional
+from typing import Dict, List, Optional
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -21,9 +22,27 @@ class GroupUpdate(BaseModel):
 
 class GroupDB(BaseModel):
     id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    uuid: str = Field(default_factory=lambda: str(uuid4()))
     name:str = Field(min_length=1, max_length=120)
     description: Optional[str] = Field(default="", max_length=500)
     created_at: datetime = Field(default_factory=datetime.utcnow)
+
+    model_config = ConfigDict(
+        populate_by_name=True,         # allow using "id" to populate "_id"
+        arbitrary_types_allowed=True,  # for ObjectId
+        json_encoders={PyObjectId: str}
+    )
+
+
+class GroupDBNew(BaseModel):
+    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    uuid: str = Field(default_factory=lambda: str(uuid4()))
+    name:str = Field(min_length=1, max_length=120)
+    description: Optional[str] = Field(default="", max_length=500)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    group_type: Optional[List[str]]
+    group_party: Dict
+
 
     model_config = ConfigDict(
         populate_by_name=True,         # allow using "id" to populate "_id"
@@ -35,6 +54,7 @@ class GroupDB(BaseModel):
 
 class GroupOut(BaseModel):
     id: str
+    uuid: str
     name: str = Field(min_length=1, max_length=120)
     description: Optional[str] = Field(default="", max_length=500)
     created_at: datetime
@@ -43,6 +63,7 @@ class GroupOut(BaseModel):
     def from_db(cls, db: GroupDB) -> "GroupOut":
         return cls(
             id=str(db.id),
+            uuid=db.uuid,
             name=db.name,
             description=db.description,
             created_at=db.created_at,
