@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import type { Item } from "@/src/types/item";
 
 type Category = {
@@ -22,83 +22,83 @@ const ITEMS: Item[] = [
 
 const CATEGORIES: Category[] = [
   {
-    id: "bags-capes",
+    id: "bag_cape",
     label: "Bags & Capes",
     subs: [
-      { id: "bags", label: "Bags" },
-      { id: "capes", label: "Capes" },
+      { id: "bag", label: "Bags" },
+      { id: "cape", label: "Capes" },
     ],
   },
   {
-    id: "weapons",
+    id: "weapon",
     label: "Weapons",
     subs: [
-      { id: "arcane-staffs", label: "Arcane Staffs" },
-      { id: "axes", label: "Axes" },
-      { id: "crossbows", label: "Crossbows" },
-      { id: "cursed-staffs", label: "Cursed Staffs" },
-      { id: "daggers", label: "Daggers" },
-      { id: "fire-staffs", label: "Fire Staffs" },
-      { id: "frost-staffs", label: "Frost Staffs" },
-      { id: "hammers", label: "Hammers" },
-      { id: "holy-staffs", label: "Holy Staffs" },
-      { id: "war-gloves", label: "War Gloves" },
-      { id: "maces", label: "Maces" },
-      { id: "nature-staffs", label: "Nature Staffs" },
-      { id: "quarterstaffs", label: "Quarterstaffs" },
-      { id: "shapeshifter-staffs", label: "Shapeshifter Staffs" },
-      { id: "spears", label: "Spears" },
-      { id: "swords", label: "Swords" },
-      { id: "bows", label: "Bows" },
+      { id: "arcane_staff", label: "Arcane Staffs" },
+      { id: "axe", label: "Axes" },
+      { id: "crossbow", label: "Crossbows" },
+      { id: "cursed_staff", label: "Cursed Staffs" },
+      { id: "dagger", label: "Daggers" },
+      { id: "fire_staff", label: "Fire Staffs" },
+      { id: "frost_staff", label: "Frost Staffs" },
+      { id: "hammer", label: "Hammers" },
+      { id: "holy_staff", label: "Holy Staffs" },
+      { id: "war_glove", label: "War Gloves" },
+      { id: "mace", label: "Maces" },
+      { id: "nature_staff", label: "Nature Staffs" },
+      { id: "quarterstaff", label: "Quarterstaffs" },
+      { id: "shapeshifter_staff", label: "Shapeshifter Staffs" },
+      { id: "spear", label: "Spears" },
+      { id: "sword", label: "Swords" },
+      { id: "bow", label: "Bows" },
     ],
   },
   {
-    id: "off-hands",
+    id: "off_hand",
     label: "Off-Hands",
     subs: [
-      { id: "off-mage", label: "Mage" },
-      { id: "off-hunter", label: "Hunter" },
-      { id: "off-warrior", label: "Warrior" },
+      { id: "off_mage", label: "Mage" },
+      { id: "off_hunter", label: "Hunter" },
+      { id: "off_warrior", label: "Warrior" },
     ],
   },
   {
     id: "head",
     label: "Head",
     subs: [
-      { id: "cloth-head", label: "Cloth Head" },
-      { id: "leather-head", label: "Leather Head" },
-      { id: "plate-head", label: "Plate Head" },
+      { id: "cloth", label: "Cloth Head" },
+      { id: "leather", label: "Leather Head" },
+      { id: "plate", label: "Plate Head" },
     ],
   },
   {
     id: "armor",
     label: "Armor",
     subs: [
-      { id: "cloth-armor", label: "Cloth Armor" },
-      { id: "leather-armor", label: "Leather Armor" },
-      { id: "plate-armor", label: "Plate Armor" },
+      { id: "cloth", label: "Cloth Armor" },
+      { id: "leather", label: "Leather Armor" },
+      { id: "plate", label: "Plate Armor" },
     ],
   },
   {
-    id: "shoes",
+    id: "shoe",
     label: "Shoes",
     subs: [
-      { id: "cloth-shoes", label: "Cloth Shoes" },
-      { id: "leather-shoes", label: "Leather Shoes" },
-      { id: "plate-shoes", label: "Plate Shoes" },
+      { id: "cloth", label: "Cloth Shoes" },
+      { id: "leather", label: "Leather Shoes" },
+      { id: "plate", label: "Plate Shoes" },
     ],
   },
   {
-    id: "mounts",
+    id: "mount",
     label: "Mounts",
     subs: [
-      { id: "regular-mounts", label: "Regular Mounts" },
-      { id: "faction-mounts", label: "Faction Mounts" },
-      { id: "battle-mounts", label: "Battle Mounts" },
+      { id: "regular", label: "Regular Mounts" },
+      { id: "faction", label: "Faction Mounts" },
+      { id: "battle", label: "Battle Mounts" },
     ],
   },
   {
-    id: "potions",
+    id: "potion",
     label: "Potions",
     subs: [], // no subs? you can leave empty array or omit subs entirely
   },
@@ -171,16 +171,27 @@ function Slot({
   );
 }
 
-function ItemCard(
-  { item, onEquip, isFocused, onFocus, }:
-    { item: Item; onEquip?: (item: Item) => void; isFocused: boolean; onFocus: (id: string) => void; }) {
+function ItemCard({
+  item,
+  onEquip,
+  isFocused,
+  onFocus,
+}: {
+  item: Item;
+  onEquip?: (item: Item) => void;
+  isFocused: boolean;
+  onFocus: (id: string) => void;
+}) {
+  // Build icon URL from item_db_name
+  const iconUrl = `https://render.albiononline.com/v1/item/${item.item_db_name}`;
+
   return (
     <div
-      onClick={() => onFocus(item.item_db_name)}
+      onClick={() => onFocus(item.id)}
       className={[
         "grid grid-cols-[40%_60%]",
         "group relative flex items-center gap-1 rounded-xl px-1 py-1",
-        "bg-[#1a1d29] border-2",
+        "bg-[#1a1d29] border",
         isFocused
           ? "border-blue-500 hover:border-blue-500"
           : "border-white/30 hover:border-white/50",
@@ -188,18 +199,22 @@ function ItemCard(
       ].join(" ")}
     >
       <div className="shrink-0">
-        <img
-          src={"https://render.albiononline.com/v1/item/" + item.item_db_name}
-          alt={item.item_name} className="w-full h-full rounded-md"
-        />
+        <img src={iconUrl} alt={item.item_name} className="w-full h-full rounded-md" />
       </div>
-      <div>
-        <div className="min-w-0">
-          <div className="truncate text-[110%] font-bold text-white/95">
-            {item.item_name}
-          </div>
+
+      <div className="min-w-0">
+        <div className="truncate text-[110%] font-bold text-white/95">
+          {item.item_name}
         </div>
-        <div className="ml-auto">
+
+        <div className="text-[11px] text-white/50 leading-tight">
+          {item.item_category_main}
+          {item.item_category_second
+            ? ` · ${item.item_category_second}`
+            : null}
+        </div>
+
+        <div className="ml-auto mt-2">
           {isFocused && (
             <button
               onClick={(e) => {
@@ -211,14 +226,20 @@ function ItemCard(
               Equip
             </button>
           )}
-
         </div>
       </div>
     </div>
   );
 }
 
+
 export default function CoonfigRole() {
+  const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+  const [items, setItems] = useState<Item[]>([]);
+  const [itemsLoading, setItemsLoading] = useState(false);
+  const [itemsError, setItemsError] = useState<string | null>(null);
+
   const [itemInFocus, setItemInFocus] = useState<string>("none");
   const [slotInFocus, setSlotInFocus] = useState<string>("none");
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
@@ -230,6 +251,51 @@ export default function CoonfigRole() {
   const [description, setDescription] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const canSubmit = name.trim().length > 0 && !submitting;
+
+  useEffect(() => {
+    if (!open) return; // only fetch when modal is visible
+
+    let cancelled = false;
+
+    async function loadItems() {
+      setItemsLoading(true);
+      setItemsError(null);
+
+      try {
+        const res = await fetch(`${base}/items`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!res.ok) {
+          const msg = await res.text();
+          throw new Error(msg || `HTTP ${res.status}`);
+        }
+
+        const data: Item[] = await res.json();
+
+        if (!cancelled) {
+          setItems(data);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setItemsError(err.message ?? "Failed to load items");
+        }
+      } finally {
+        if (!cancelled) {
+          setItemsLoading(false);
+        }
+      }
+    }
+
+    loadItems();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, NEXT_PUBLIC_BACKEND_URL]);
 
   // which item is equipped in each slot
   const [slotItems, setSlotItems] = useState<Record<string, Item | null>>({
@@ -269,9 +335,39 @@ export default function CoonfigRole() {
     }));
   }
 
-  const filteredItems = ITEMS.filter((i) =>
-    i.item_name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredItems = items
+    .filter((i) =>
+      i.item_name.toLowerCase().includes(search.toLowerCase())
+    )
+    .filter((i) => {
+      // optional: enforce compatibility:
+      if (slotInFocus === "slot_main_weapon") return i.item_category_main === "weapon";
+      if (slotInFocus === "slot_off_hand") return i.item_category_main === "off_hand";
+      if (slotInFocus === "slot_head") return i.item_category_main === "head";
+      if (slotInFocus === "slot_armor") return i.item_category_main === "armor";
+      if (slotInFocus === "slot_shoes") return i.item_category_main === "shoes";
+      if (slotInFocus === "slot_food") return i.item_category_main === "food";
+      if (slotInFocus === "slot_potion") return i.item_category_main === "potion";
+      if (slotInFocus === "slot_mount") return i.item_category_main === "mount";
+      if (slotInFocus === "slot_bag") return i.item_category_main === "bag";
+      if (slotInFocus === "slot_cape") return i.item_category_main === "cape";
+      return true;
+    })
+    .filter(i => {
+      if (openCategoryId == null) return true; // fallback
+
+      if (i.item_category_main !== openCategoryId) {
+        return false;
+      }
+
+      if (openSubCategory == null) return true; // fallback
+
+      if (i.item_category_second !== openSubCategory) {
+        return false;
+      }
+
+      return true;
+    });
 
   const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
@@ -656,21 +752,29 @@ export default function CoonfigRole() {
                   <div className="px-2 grow">
                     <div
                       className="
-                        max-h-123 overflow-y-auto pr-2
+                        max-h-117 overflow-y-auto pr-2
                         grid gap-3
                         grid-cols-1 sm:grid-cols-2
                       "
                     >
-                      {filteredItems.length === 0 ? (
+                      {itemsLoading ? (
+                        <div className="col-span-full rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/70 text-sm">
+                          Loading items…
+                        </div>
+                      ) : itemsError ? (
+                        <div className="col-span-full rounded-xl border border-red-500/40 bg-red-900/30 p-6 text-center text-red-200 text-sm">
+                          Failed to load items: {itemsError}
+                        </div>
+                      ) : filteredItems.length === 0 ? (
                         <div className="col-span-full rounded-xl border border-white/10 bg-white/5 p-6 text-center text-white/60">
                           No items match your search.
                         </div>
                       ) : (
-                        filteredItems.map((item, idx) => (
+                        filteredItems.map((item) => (
                           <ItemCard
-                            key={item.item_db_name}
+                            key={item.id}
                             item={item}
-                            isFocused={itemInFocus === item.item_db_name}
+                            isFocused={itemInFocus === item.id}
                             onFocus={setItemInFocus}
                             onEquip={(it) => {
                               equipItemToFocusedSlot(it);
