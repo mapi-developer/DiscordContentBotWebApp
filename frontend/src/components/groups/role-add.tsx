@@ -1,12 +1,7 @@
 "use client"
 
 import React, { useState } from "react";
-
-type Item = {
-  id: string; // data base id
-  name: string;
-  icon: string; // image src
-};
+import type { Item } from "@/src/types/item";
 
 type Category = {
   id: string;
@@ -17,13 +12,12 @@ type Category = {
 const ROLE_TYPES = ["Healer", "Range DD", "Melee DD", "Support", "Tank", "Battle Mount"];
 
 const ITEMS: Item[] = [
-  { id: "galatine-pair", name: "Galatine Pair", icon: "https://render.albiononline.com/v1/item/T8_2H_DUALSCIMITAR_UNDEAD" },
-  { id: "carving-sword", name: "Carving Sword", icon: "https://render.albiononline.com/v1/item/T8_2H_CLEAVER_HELL" },
-  { id: "bear-paws", name: "Bear Paws", icon: "https://render.albiononline.com/v1/item/T8_2H_DUALAXE_KEEPER" },
-  { id: "bloodletter", name: "Bloodletter", icon: "https://render.albiononline.com/v1/item/T8_MAIN_RAPIER_MORGANA" },
-  { id: "clarent-blade", name: "Clarent Blade", icon: "https://render.albiononline.com/v1/item/T8_MAIN_SCIMITAR_MORGANA" },
-  { id: "demon-fang", name: "Demonfang", icon: "https://render.albiononline.com/v1/item/T8_MAIN_DAGGER_HELL" },
-
+  { id: "", item_db_name: "T8_2H_DUALSCIMITAR_UNDEAD", item_name: "Galatine Pair", item_category_main: "weapon", item_category_second: "sword" },
+  { id: "", item_db_name: "T8_2H_CLEAVER_HELL", item_name: "Carving Sword", item_category_main: "weapon", item_category_second: "sword" },
+  { id: "", item_db_name: "T8_2H_DUALAXE_KEEPER", item_name: "Bear Paws", item_category_main: "weapon", item_category_second: "axe" },
+  { id: "", item_db_name: "T8_MAIN_RAPIER_MORGANA", item_name: "Bloodletter", item_category_main: "weapon", item_category_second: "dagger" },
+  { id: "", item_db_name: "T8_MAIN_SCIMITAR_MORGANA", item_name: "Clarent Blade", item_category_main: "weapon", item_category_second: "sword" },
+  { id: "", item_db_name: "T8_MAIN_DAGGER_HELL", item_name: "Demonfang", item_category_main: "weapon", item_category_second: "dagger" },
 ];
 
 const CATEGORIES: Category[] = [
@@ -150,7 +144,7 @@ function Slot({
       {/* item icon */}
       {slot_item != null && (
         <img
-          src={slot_item.icon}
+          src={"https://render.albiononline.com/v1/item/" + slot_item.item_db_name}
           className="object-contain pointer-events-none select-none"
         />
       )}
@@ -182,7 +176,7 @@ function ItemCard(
     { item: Item; onEquip?: (item: Item) => void; isFocused: boolean; onFocus: (id: string) => void; }) {
   return (
     <div
-      onClick={() => onFocus(item.id)}
+      onClick={() => onFocus(item.item_db_name)}
       className={[
         "grid grid-cols-[40%_60%]",
         "group relative flex items-center gap-1 rounded-xl px-1 py-1",
@@ -194,12 +188,15 @@ function ItemCard(
       ].join(" ")}
     >
       <div className="shrink-0">
-        <img src={item.icon} alt={item.name} className="w-full h-full rounded-md" />
+        <img
+          src={"https://render.albiononline.com/v1/item/" + item.item_db_name}
+          alt={item.item_name} className="w-full h-full rounded-md"
+        />
       </div>
       <div>
         <div className="min-w-0">
           <div className="truncate text-[110%] font-bold text-white/95">
-            {item.name}
+            {item.item_name}
           </div>
         </div>
         <div className="ml-auto">
@@ -273,7 +270,7 @@ export default function CoonfigRole() {
   }
 
   const filteredItems = ITEMS.filter((i) =>
-    i.name.toLowerCase().includes(search.toLowerCase())
+    i.item_name.toLowerCase().includes(search.toLowerCase())
   );
 
   const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
@@ -671,9 +668,9 @@ export default function CoonfigRole() {
                       ) : (
                         filteredItems.map((item, idx) => (
                           <ItemCard
-                            key={item.id}
+                            key={item.item_db_name}
                             item={item}
-                            isFocused={itemInFocus === item.id}
+                            isFocused={itemInFocus === item.item_db_name}
                             onFocus={setItemInFocus}
                             onEquip={(it) => {
                               equipItemToFocusedSlot(it);
