@@ -1,7 +1,8 @@
 export type Group = {
-  id: string;        // Mongo ObjectId as string
-  uuid: string;      // Stable external identifier
+  id: string;
+  uuid: string;
   name: string;
   description?: string | null;
+  creator_id: string;
   created_at?: string;
 };

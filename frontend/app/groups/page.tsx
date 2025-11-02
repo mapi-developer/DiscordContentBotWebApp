@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConfigRole from "@/src/components/groups/role-add";
 import AddGroup from "@/src/components/groups/groups-add";
 import GroupsList from "@/src/components/groups/groups-list";
 
@@ -15,7 +16,8 @@ export default async function GroupsPage() {
 
       <div className="mb-6 flex items-center justify-between py-2">
         <h1 className="text-2xl font-semibold tracking-tight">Groups</h1>
-        <AddGroup />
+        {/* <AddGroup /> */}
+        <ConfigRole />
       </div>
 
       <GroupsList initialGroups={groups} />
