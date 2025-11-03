@@ -1,6 +1,5 @@
 import Link from "next/link";
 import ConfigRole from "@/src/components/groups/role-add";
-import AddGroup from "@/src/components/groups/groups-add";
 import GroupsList from "@/src/components/groups/groups-list";
 
 export const dynamic = "force-dynamic";

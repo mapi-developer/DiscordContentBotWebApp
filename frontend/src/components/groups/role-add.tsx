@@ -108,50 +108,56 @@ function Slot({
   slot_item,
   onFocus,
   onRemove,
-  className
+  className,
+  disabled = false,
 }: {
-  slot_id: string,
-  is_focused: boolean,
-  slot_item: Item | null,
-  onFocus: (id: string) => void,
-  onRemove?: (slot_id: string) => void,
-  className?: string
+  slot_id: string;
+  is_focused: boolean;
+  slot_item: Item | null;
+  onFocus: (id: string) => void;
+  onRemove?: (slot_id: string) => void;
+  className?: string;
+  disabled?: boolean;
 }) {
-
   const img_src: string | null = slot_item
-    ? SPECIAL_TYPES.some(el => slot_item.item_db_name.includes(el))
+    ? SPECIAL_TYPES.some((el) => slot_item.item_db_name.includes(el))
       ? `https://render.albiononline.com/v1/item/${slot_item.item_db_name}`
       : `https://render.albiononline.com/v1/item/T8_${slot_item.item_db_name}`
     : null;
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
-      aria-pressed={is_focused}
-      onClick={() => onFocus(slot_id)}
+    <button
+      type="button"
+      onClick={() => {
+        if (!disabled) onFocus(slot_id);
+      }}
       className={[
         "w-full aspect-square rounded-2xl border-2 bg-black/60",
         "shadow-[0_0_0_2px_rgba(255,255,255,0.05)_inset] flex items-center justify-center",
-        "transition-colors outline-none",
-        "relative",
-        is_focused
-          ? "border-blue-500"
-          : "border-white/30 hover:border-white/50",
+        "transition-colors outline-none relative",
+        disabled
+          ? "border-white/10 opacity-40 cursor-not-allowed"
+          : is_focused
+            ? "border-blue-500 cursor-pointer"
+            : "border-white/30 hover:border-white/50 cursor-pointer",
         className,
       ].join(" ")}
     >
       {/* item icon */}
-      {(
+      {img_src ? (
         <img
-          src={img_src != null ? img_src : undefined}
-          className="object-contain pointer-events-none select-none"
+          src={img_src}
+          alt={slot_item?.item_name ?? slot_id}
+          className="h-full w-full object-contain"
         />
+      ) : (
+        <span className="text-xs text-white/40">Empty</span>
       )}
 
       {/* red remove button */}
-      {is_focused && slot_item != null && (
+      {is_focused && slot_item != null && !disabled && (
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation(); // don't trigger focus again
             onRemove?.(slot_id);
@@ -162,12 +168,11 @@ function Slot({
             "bg-red-700 hover:bg-red-800 text-white",
             "hover:border hover:border-[#592516] shadow-lg",
             "bg-[url('/cross.svg')] bg-no-repeat",
-            "h-[30%] w-[30%]"
+            "h-[30%] w-[30%]",
           ].join(" ")}
-        >
-        </button>
+        />
       )}
-    </div>
+    </button>
   );
 }
 
@@ -318,6 +323,9 @@ export default function CoonfigRole() {
     mount: null,
   });
 
+  const [offHandDisabled, setOffHandDisabled] = useState(false);
+  const [offHandMirrorsWeapon, setOffHandMirrorsWeapon] = useState(false);
+
   function toggleCategory(catId: string) {
     if (openCategoryId === catId) {
       setOpenCategoryId(null);
@@ -334,23 +342,47 @@ export default function CoonfigRole() {
   }
 
   function toggleSlot(slotId: string) {
+    if (slotId === "off_hand" && offHandDisabled) {
+      return;
+    }
     setSlotInFocus((prev) => (prev === slotId ? null : slotId));
   }
 
   function equipItemToFocusedSlot(it: Item) {
     if (!slotInFocus || slotInFocus === "none") return;
 
-    setSlotItems((prev) => ({
-      ...prev,
-      [slotInFocus]: it, // put this item into the focused slot
-    }));
+    setSlotItems((prev) => {
+      const updated = { ...prev, [slotInFocus]: it };
+
+      if (slotInFocus === "weapon") {
+        const isTwoHanded = it.item_db_name.includes("2H_");
+
+        if (isTwoHanded) {
+          // clear real off-hand item
+          updated.off_hand = null;
+        }
+
+        // control UI behaviour
+        setOffHandDisabled(isTwoHanded);
+        setOffHandMirrorsWeapon(isTwoHanded);
+      }
+
+      return updated;
+    });
   }
 
   function clearSlot(slotId: string) {
-    setSlotItems((prev) => ({
-      ...prev,
-      [slotId]: null,
-    }));
+    setSlotItems((prev) => {
+      const updated = { ...prev, [slotId]: null };
+
+      if (slotId === "weapon") {
+        // when we remove weapon, off-hand becomes usable again
+        setOffHandDisabled(false);
+        setOffHandMirrorsWeapon(false);
+      }
+
+      return updated;
+    });
   }
 
   const filteredItems = items
@@ -520,7 +552,8 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-3 row-start-2"
-                      slot_item={slotItems["off_hand"]}
+                      slot_item={offHandMirrorsWeapon ? slotItems.weapon : slotItems.off_hand}
+                      disabled={offHandDisabled}
                     />
 
                     {/* Row 3 */}
