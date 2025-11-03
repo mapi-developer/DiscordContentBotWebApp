@@ -1,9 +1,35 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import type { Item } from "@/src/types/item";
 
-const SPECIAL_TYPES = ["MEAL", "POTION", "MOUNT"]
+const SPECIAL_TYPES = ["MEAL", "POTION", "MOUNT"] as const;
+
+export type SlotId =
+  | "bag"
+  | "cape"
+  | "head"
+  | "armor"
+  | "shoes"
+  | "weapon"
+  | "off_hand"
+  | "potion"
+  | "food"
+  | "mount";
+
+export type RoleConfig = {
+  name: string;
+  description: string;
+  roleType: string;
+  slotItems: Record<SlotId, Item | null>;
+};
+
+type RoleAddModalProps = {
+  open: boolean;
+  initialRole?: RoleConfig | null;
+  onCancel: () => void;
+  onSave: (role: RoleConfig) => void;
+};
 
 type Category = {
   id: string;
@@ -11,7 +37,14 @@ type Category = {
   subs?: { id: string; label: string }[];
 };
 
-const ROLE_TYPES = ["Healer", "Range DD", "Melee DD", "Support", "Tank", "Battle Mount"];
+const ROLE_TYPES = [
+  "Healer",
+  "Range DD",
+  "Melee DD",
+  "Support",
+  "Tank",
+  "Battle Mount",
+];
 
 const CATEGORIES: Category[] = [
   {
@@ -90,40 +123,40 @@ const CATEGORIES: Category[] = [
       { id: "battle", label: "Battle Mounts" },
     ],
   },
-  {
-    id: "potion",
-    label: "Potions",
-    subs: [], // no subs? you can leave empty array or omit subs entirely
-  },
-  {
-    id: "food",
-    label: "Food",
-    subs: [], // same
-  },
+  { id: "potion", label: "Potions", subs: [] },
+  { id: "food", label: "Food", subs: [] },
 ];
 
-function Slot({
-  slot_id,
-  is_focused,
-  slot_item,
-  onFocus,
-  onRemove,
-  className,
-  disabled = false,
-}: {
-  slot_id: string;
+function getItemIcon(item: Item | null): string | null {
+  if (!item) return null;
+  const isSpecial = SPECIAL_TYPES.some((el) =>
+    item.item_db_name.includes(el),
+  );
+  return isSpecial
+    ? `https://render.albiononline.com/v1/item/${item.item_db_name}`
+    : `https://render.albiononline.com/v1/item/T8_${item.item_db_name}`;
+}
+
+function Slot(props: {
+  slot_id: SlotId;
   is_focused: boolean;
   slot_item: Item | null;
-  onFocus: (id: string) => void;
-  onRemove?: (slot_id: string) => void;
+  onFocus: (id: SlotId) => void;
+  onRemove?: (slot_id: SlotId) => void;
   className?: string;
   disabled?: boolean;
 }) {
-  const img_src: string | null = slot_item
-    ? SPECIAL_TYPES.some((el) => slot_item.item_db_name.includes(el))
-      ? `https://render.albiononline.com/v1/item/${slot_item.item_db_name}`
-      : `https://render.albiononline.com/v1/item/T8_${slot_item.item_db_name}`
-    : null;
+  const {
+    slot_id,
+    is_focused,
+    slot_item,
+    onFocus,
+    onRemove,
+    className,
+    disabled = false,
+  } = props;
+
+  const img_src = getItemIcon(slot_item);
 
   return (
     <button
@@ -141,9 +174,10 @@ function Slot({
             ? "border-blue-500 cursor-pointer"
             : "border-white/30 hover:border-white/50 cursor-pointer",
         className,
-      ].join(" ")}
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
-      {/* item icon */}
       {img_src ? (
         <img
           src={img_src}
@@ -151,22 +185,23 @@ function Slot({
           className="h-full w-full object-contain"
         />
       ) : (
-        <span className="text-xs text-white/40">Empty</span>
+        <span className="text-[10px] uppercase tracking-wide text-white/40">
+          Empty
+        </span>
       )}
 
-      {/* red remove button */}
-      {is_focused && slot_item != null && !disabled && (
+      {is_focused && slot_item && !disabled && onRemove && (
         <button
           onClick={(e) => {
-            e.stopPropagation(); // don't trigger focus again
-            onRemove?.(slot_id);
+            e.stopPropagation();
+            onRemove(slot_id);
           }}
           className={[
             "rounded-sm absolute top-1 right-1 z-10",
             "px-2 py-1 text-[10px] font-bold leading-none",
             "bg-red-700 hover:bg-red-800 text-white",
             "hover:border hover:border-[#592516] shadow-lg",
-            "bg-[url('/cross.svg')] bg-no-repeat",
+            "bg-[url('/cross.svg')] bg-no-repeat bg-center",
             "h-[30%] w-[30%]",
           ].join(" ")}
         />
@@ -175,23 +210,14 @@ function Slot({
   );
 }
 
-function ItemCard({
-  item,
-  onEquip,
-  isFocused,
-  onFocus,
-}: {
+function ItemCard(props: {
   item: Item;
   onEquip?: (item: Item) => void;
   isFocused: boolean;
   onFocus: (id: string) => void;
 }) {
-
-  const img_src: string | null = item
-    ? SPECIAL_TYPES.some(el => item.item_db_name.includes(el))
-      ? `https://render.albiononline.com/v1/item/${item.item_db_name}`
-      : `https://render.albiononline.com/v1/item/T8_${item.item_db_name}`
-    : null;
+  const { item, onEquip, isFocused, onFocus } = props;
+  const img_src = getItemIcon(item);
 
   return (
     <div
@@ -207,10 +233,13 @@ function ItemCard({
       ].join(" ")}
     >
       <div className="shrink-0">
-        <img
-          src={img_src != null ? img_src : undefined}
-          alt={item.item_name} className="w-full h-full rounded-md"
-        />
+        {img_src && (
+          <img
+            src={img_src}
+            alt={item.item_name}
+            className="w-full h-full rounded-md"
+          />
+        )}
       </div>
 
       <div className="min-w-0">
@@ -243,193 +272,162 @@ function ItemCard({
   );
 }
 
+function makeEmptyRole(): RoleConfig {
+  return {
+    name: "",
+    description: "",
+    roleType: "",
+    slotItems: {
+      bag: null,
+      cape: null,
+      head: null,
+      armor: null,
+      shoes: null,
+      weapon: null,
+      off_hand: null,
+      potion: null,
+      food: null,
+      mount: null,
+    },
+  };
+}
 
-export default function CoonfigRole() {
-  const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const NEXT_PUBLIC_BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
+export default function RoleAddModal({
+  open,
+  initialRole,
+  onCancel,
+  onSave,
+}: RoleAddModalProps) {
   const [items, setItems] = useState<Item[]>([]);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemsError, setItemsError] = useState<string | null>(null);
 
-  const [itemInFocus, setItemInFocus] = useState<string>("none");
-  const [slotInFocus, setSlotInFocus] = useState<string | null>(null);
+  const [role, setRole] = useState<RoleConfig>(makeEmptyRole);
+  const [slotInFocus, setSlotInFocus] = useState<SlotId | null>(null);
+  const [itemInFocus, setItemInFocus] = useState<string | null>(null);
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
-  const [openSubCategory, setOpenSubCategoryId] = useState<string | null>(null);
+  const [openSubCategory, setOpenSubCategory] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [roleType, setRoleType] = useState("");
-  const [description, setDescription] = useState("");
+  const [offHandDisabled, setOffHandDisabled] = useState(false);
+  const [offHandMirrorsWeapon, setOffHandMirrorsWeapon] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const canSubmit = name.trim().length > 0 && !submitting;
 
   useEffect(() => {
-    if (!open) return; // only fetch when modal is visible
+    if (!open) return;
 
     let cancelled = false;
-
     async function loadItems() {
       setItemsLoading(true);
       setItemsError(null);
-
       try {
-        const res = await fetch(`${base}/items`, {
+        const res = await fetch(`${NEXT_PUBLIC_BACKEND_URL}/items`, {
           method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
         });
-
         if (!res.ok) {
           const msg = await res.text();
           throw new Error(msg || `HTTP ${res.status}`);
         }
-
         const data: Item[] = await res.json();
-
-        if (!cancelled) {
-          setItems(data);
-        }
+        if (!cancelled) setItems(data);
       } catch (err: any) {
-        if (!cancelled) {
+        if (!cancelled)
           setItemsError(err.message ?? "Failed to load items");
-        }
       } finally {
-        if (!cancelled) {
-          setItemsLoading(false);
-        }
+        if (!cancelled) setItemsLoading(false);
       }
     }
 
     loadItems();
-
     return () => {
       cancelled = true;
     };
-  }, [open, NEXT_PUBLIC_BACKEND_URL]);
+  }, [open]);
 
-  // which item is equipped in each slot
-  const [slotItems, setSlotItems] = useState<Record<string, Item | null>>({
-    bag: null,
-    cape: null,
-    head: null,
-    armor: null,
-    shoes: null,
-    weapon: null,
-    off_hand: null,
-    potion: null,
-    food: null,
-    mount: null,
-  });
+  useEffect(() => {
+    if (!open) return;
+    const baseRole = initialRole ?? makeEmptyRole();
+    setRole(baseRole);
+    setSlotInFocus(null);
+    setItemInFocus(null);
+    setOpenCategoryId(null);
+    setOpenSubCategory(null);
 
-  const [offHandDisabled, setOffHandDisabled] = useState(false);
-  const [offHandMirrorsWeapon, setOffHandMirrorsWeapon] = useState(false);
+    const isTwoHanded =
+      baseRole.slotItems.weapon?.item_db_name.includes("2H_") ?? false;
+    setOffHandDisabled(isTwoHanded);
+    setOffHandMirrorsWeapon(isTwoHanded);
+  }, [open, initialRole]);
 
   function toggleCategory(catId: string) {
     if (openCategoryId === catId) {
       setOpenCategoryId(null);
-      setOpenSubCategoryId(null);
-    }
-    else {
+      setOpenSubCategory(null);
+    } else {
       setOpenCategoryId(catId);
-      setOpenSubCategoryId(null);
+      setOpenSubCategory(null);
     }
   }
 
-  function toggleSubCategory(catId: string) {
-    setOpenSubCategoryId((prev) => (prev === catId ? null : catId));
+  function toggleSubCategory(subId: string) {
+    setOpenSubCategory((prev) => (prev === subId ? null : subId));
   }
 
-  function toggleSlot(slotId: string) {
-    if (slotId === "off_hand" && offHandDisabled) {
-      return;
-    }
+  function toggleSlot(slotId: SlotId) {
+    if (slotId === "off_hand" && offHandDisabled) return;
     setSlotInFocus((prev) => (prev === slotId ? null : slotId));
   }
 
   function equipItemToFocusedSlot(it: Item) {
-    if (!slotInFocus || slotInFocus === "none") return;
+    if (!slotInFocus) return;
 
-    setSlotItems((prev) => {
-      const updated = { ...prev, [slotInFocus]: it };
+    setRole((prev) => {
+      const next: RoleConfig = {
+        ...prev,
+        slotItems: { ...prev.slotItems, [slotInFocus]: it },
+      };
 
       if (slotInFocus === "weapon") {
         const isTwoHanded = it.item_db_name.includes("2H_");
-
         if (isTwoHanded) {
-          // clear real off-hand item
-          updated.off_hand = null;
+          next.slotItems.off_hand = null;
         }
-
-        // control UI behaviour
         setOffHandDisabled(isTwoHanded);
         setOffHandMirrorsWeapon(isTwoHanded);
       }
 
-      return updated;
+      return next;
     });
   }
 
-  function clearSlot(slotId: string) {
-    setSlotItems((prev) => {
-      const updated = { ...prev, [slotId]: null };
+  function clearSlot(slotId: SlotId) {
+    setRole((prev) => {
+      const next: RoleConfig = {
+        ...prev,
+        slotItems: { ...prev.slotItems, [slotId]: null },
+      };
 
       if (slotId === "weapon") {
-        // when we remove weapon, off-hand becomes usable again
         setOffHandDisabled(false);
         setOffHandMirrorsWeapon(false);
       }
 
-      return updated;
+      return next;
     });
   }
 
-  const filteredItems = items
-    .filter((i) =>
-      i.item_name.toLowerCase().includes(search.toLowerCase())
-    )
-    .filter((i) => {
-      // optional: enforce compatibility:
-      if (slotInFocus === "weapon") return i.item_category_main === "weapon";
-      if (slotInFocus === "off_hand") return i.item_category_main === "off_hand";
-      if (slotInFocus === "head") return i.item_category_main === "head";
-      if (slotInFocus === "armor") return i.item_category_main === "armor";
-      if (slotInFocus === "shoes") return i.item_category_main === "shoes";
-      if (slotInFocus === "food") return i.item_category_main === "food";
-      if (slotInFocus === "potion") return i.item_category_main === "potion";
-      if (slotInFocus === "mount") return i.item_category_main === "mount";
-      if (slotInFocus === "bag") return i.item_category_main === "bag_cape" && i.item_category_second === "bag";
-      if (slotInFocus === "cape") return i.item_category_main === "bag_cape" && i.item_category_second === "cape";
-      return true;
-    })
-    .filter(i => {
-      if (openCategoryId == null) return true; // fallback
-
-      if (i.item_category_main !== openCategoryId) {
-        return false;
-      }
-
-      if (openSubCategory == null) return true; // fallback
-
-      if (i.item_category_second !== openSubCategory) {
-        return false;
-      }
-
-      return true;
-    });
-
-  const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
-
-  function ResetSearch() {
+  function resetSearch() {
     setSearch("");
     setOpenCategoryId(null);
-    setOpenSubCategoryId(null);
+    setOpenSubCategory(null);
   }
 
-  function ResetCharacter() {
-    setName("");
-    setDescription("");
-    setRoleType("");
+  function resetCharacter() {
+    role.name = ""
+    role.description = ""
+    role.roleType = ""
     clearSlot("bag");
     clearSlot("head");
     clearSlot("cape");
@@ -443,50 +441,98 @@ export default function CoonfigRole() {
     setSlotInFocus(null);
   }
 
-  async function onSubmit(e: React.FormEvent) {
+  const filteredItems = useMemo(() => {
+    let out = items;
+
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      out = out.filter((i) =>
+        i.item_name.toLowerCase().includes(q),
+      );
+    }
+
+    if (slotInFocus) {
+      out = out.filter((i) => {
+        switch (slotInFocus) {
+          case "weapon":
+            return i.item_category_main === "weapon";
+          case "off_hand":
+            return i.item_category_main === "off_hand";
+          case "head":
+            return i.item_category_main === "head";
+          case "armor":
+            return i.item_category_main === "armor";
+          case "shoes":
+            return i.item_category_main === "shoes";
+          case "food":
+            return i.item_category_main === "food";
+          case "potion":
+            return i.item_category_main === "potion";
+          case "mount":
+            return i.item_category_main === "mount";
+          case "bag":
+            return (
+              i.item_category_main === "bag_cape" &&
+              i.item_category_second === "bag"
+            );
+          case "cape":
+            return (
+              i.item_category_main === "bag_cape" &&
+              i.item_category_second === "cape"
+            );
+          default:
+            return true;
+        }
+      });
+    }
+
+    if (openCategoryId) {
+      out = out.filter((i) => i.item_category_main === openCategoryId);
+    }
+
+    if (openSubCategory) {
+      out = out.filter(
+        (i) => i.item_category_second === openSubCategory,
+      );
+    }
+
+    return out;
+  }, [items, search, slotInFocus, openCategoryId, openSubCategory]);
+
+  const canSave =
+    role.name.trim().length > 0 &&
+    role.roleType.trim().length > 0 &&
+    !submitting;
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canSubmit) return;
+    if (!canSave) return;
     setSubmitting(true);
     try {
-      const r = await fetch(`${base}/groups`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          description: description.trim() || undefined,
-        }),
-      });
-      if (!r.ok) {
-        const msg = await r.text();
-        alert(`Failed to create group: ${msg || r.status}`);
-        return;
-      }
-      new BroadcastChannel("groups").postMessage("refresh");
-      setOpen(false);
-      setName("");
-      setDescription("");
-      setRoleType("");
+      const clean: RoleConfig = {
+        ...role,
+        name: role.name.trim(),
+        description: role.description.trim(),
+        roleType: role.roleType.trim(),
+      };
+      onSave(clean);
+      onCancel();
     } finally {
       setSubmitting(false);
     }
   }
 
+  if (!open) return null;
+
   return (
     <>
-      <button
-        onClick={() => setOpen(true)}
-        className="rounded-lg px-3 py-2 text-sm font-semibold bg-[#19244d] hover:bg-[#1a2b69] text-white transition"
-      >
-        Add Group
-      </button>
-
       {open && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-black/60 p-4">
           <div className="w-full max-w-max rounded-2xl border border-white/10 bg-[#0b0f17] p-5">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-xl color-white font-bold">Add Role</div>
             </div>
-            <div className="grid gap-6 md:grid-cols-[300px_1px_650px]">
+            <div onSubmit={handleSubmit} className="grid gap-6 md:grid-cols-[300px_1px_650px]">
               {/* Left Side */}
               <div className="grid grid-rows-[50%_50%]">
                 <div className="bg-[url('/character-bg.svg')] bg-no-repeat w-[80%] bg-position:[50%_2px] place-self-center">
@@ -500,7 +546,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-1 row-start-1"
-                      slot_item={slotItems["bag"]}
+                      slot_item={role.slotItems.bag}
                     />
                     <Slot
                       slot_id="head"
@@ -508,7 +554,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-1"
-                      slot_item={slotItems["head"]}
+                      slot_item={role.slotItems.head}
                     />
                     <Slot
                       slot_id="cape"
@@ -516,7 +562,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-3 row-start-1"
-                      slot_item={slotItems["cape"]}
+                      slot_item={role.slotItems.cape}
                     />
 
                     {/* Row 2 */}
@@ -526,7 +572,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-1 row-start-2"
-                      slot_item={slotItems["weapon"]}
+                      slot_item={role.slotItems.weapon}
                     />
                     <Slot
                       slot_id="armor"
@@ -534,7 +580,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-2"
-                      slot_item={slotItems["armor"]}
+                      slot_item={role.slotItems.armor}
                     />
                     <Slot
                       slot_id="off_hand"
@@ -542,7 +588,11 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-3 row-start-2"
-                      slot_item={offHandMirrorsWeapon ? slotItems.weapon : slotItems.off_hand}
+                      slot_item={
+                        offHandMirrorsWeapon
+                          ? role.slotItems.weapon
+                          : role.slotItems.off_hand
+                      }
                       disabled={offHandDisabled}
                     />
 
@@ -553,7 +603,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-1 row-start-3"
-                      slot_item={slotItems["potion"]}
+                      slot_item={role.slotItems.potion}
                     />
                     <Slot
                       slot_id="shoes"
@@ -561,7 +611,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-3"
-                      slot_item={slotItems["shoes"]}
+                      slot_item={role.slotItems.shoes}
                     />
                     <Slot
                       slot_id="food"
@@ -569,7 +619,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-3 row-start-3"
-                      slot_item={slotItems["food"]}
+                      slot_item={role.slotItems.food}
                     />
 
                     {/* Extra bottom-center row (Row 4, col 2) */}
@@ -579,7 +629,7 @@ export default function CoonfigRole() {
                       onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-4"
-                      slot_item={slotItems["mount"]}
+                      slot_item={role.slotItems.mount}
                     />
                   </div>
                 </div>
@@ -589,8 +639,10 @@ export default function CoonfigRole() {
                       Role Name <span className="text-red-400">*</span>
                     </div>
                     <input
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
+                      value={role.name}
+                      onChange={(e) =>
+                        setRole((prev) => ({ ...prev, name: e.target.value }))
+                      }
                       className="w-full rounded-lg border border-white/25 bg-black/60 px-3 py-2 outline-none focus:ring-2 focus:ring-white/20"
                       placeholder="What is role title?"
                     />
@@ -600,8 +652,13 @@ export default function CoonfigRole() {
                       Role Description
                     </div>
                     <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      value={role.description}
+                      onChange={(e) =>
+                        setRole((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
                       rows={3}
                       className="w-full rounded-lg border border-white/25 bg-black/60 px-3 py-2 outline-none focus:ring-2 focus:ring-white/20 resize-none"
                       placeholder="What is this group about?"
@@ -616,8 +673,13 @@ export default function CoonfigRole() {
                       {/* Select */}
                       <div className="relative w-[50%] ">
                         <select
-                          value={roleType}
-                          onChange={(e) => setRoleType(e.target.value)}
+                          value={role.roleType}
+                          onChange={(e) =>
+                            setRole((prev) => ({
+                              ...prev,
+                              roleType: e.target.value,
+                            }))
+                          }
                           className="
                             w-full appearance-none pr-10
                             rounded-lg border border-white/25 bg-black
@@ -653,7 +715,7 @@ export default function CoonfigRole() {
 
                       {/* Button on the right */}
                       <button
-                        onClick={() => ResetCharacter()}
+                        onClick={resetCharacter}
                         className="
                           rounded-md px-3 py-1 text-m font-bold
                           bg-[#666666] hover:bg-[#888888] text-white transition
@@ -702,7 +764,7 @@ export default function CoonfigRole() {
                     />
                   </div>
                   <button
-                    onClick={() => ResetSearch()}
+                    onClick={resetSearch}
                     className="
                       rounded-md px-3 my-1 text-m font-bold mx-5
                       bg-[#666666] hover:bg-[#888888] text-white transition
@@ -713,7 +775,7 @@ export default function CoonfigRole() {
                     Reset Filters
                   </button>
                 </div>
-                <div className="py-3 grid grid-cols-[25%_75%]">
+                <div className="py-3 grid grid-cols-[25%_75%] min-h-110 max-h-120">
                   <div
                     className="
                       h-[95%] max-h-123 overflow-y-auto
@@ -829,7 +891,7 @@ export default function CoonfigRole() {
                 </div>
                 <div className="flex justify-end">
                   <button
-                    onClick={() => setOpen(false)}
+                    onClick={onCancel}
                     className="mx-3 my-5 rounded-md px-2 py-1.5 text-sm font-bold
                       bg-[#666666]/0 hover:bg-[#212121] text-white transition
                       border border-white/30
@@ -838,13 +900,17 @@ export default function CoonfigRole() {
                     Cancel
                   </button>
                   <button
-                    onClick={() => setOpen(false)}
-                    className="mx-3 my-5 rounded-md px-4 py-1.5 text-sm font-bold
-                      bg-[#07478b] hover:bg-[#2273c5] text-white transition
-                      border border-white/30
-                    "
+                    type="submit"
+                    onClick={handleSubmit}
+                    disabled={!canSave}
+                    className={[
+                      "px-4 py-2 text-sm",
+                      canSave
+                        ? " bg-[#0b4e97] hover:bg-[#2273c5]"
+                        : " bg-blue-600/40 cursor-not-allowed",
+                    ].join("mx-3 my-5 rounded-md px-4 py-1.5 font-bold text-white transition border border-white/30")}
                   >
-                    Save
+                    {submitting ? "Saving…" : "Save Role"}
                   </button>
                 </div>
               </div>
