@@ -157,7 +157,6 @@ function Slot({
       {/* red remove button */}
       {is_focused && slot_item != null && !disabled && (
         <button
-          type="button"
           onClick={(e) => {
             e.stopPropagation(); // don't trigger focus again
             onRemove?.(slot_id);
@@ -486,15 +485,6 @@ export default function CoonfigRole() {
           <div className="w-full max-w-max rounded-2xl border border-white/10 bg-[#0b0f17] p-5">
             <div className="mb-2 flex items-center justify-between">
               <div className="text-xl color-white font-bold">Add Role</div>
-              <button
-                onClick={() => setOpen(false)}
-                className="rounded-md px-2 py-1.5 text-sm font-bold
-                  bg-[#666666] hover:bg-[#888888] text-white transition
-                  border border-white/20
-                "
-              >
-                Close
-              </button>
             </div>
             <div className="grid gap-6 md:grid-cols-[300px_1px_650px]">
               {/* Left Side */}
@@ -836,6 +826,26 @@ export default function CoonfigRole() {
                       )}
                     </div>
                   </div>
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="mx-3 my-5 rounded-md px-2 py-1.5 text-sm font-bold
+                      bg-[#666666]/0 hover:bg-[#212121] text-white transition
+                      border border-white/30
+                    "
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => setOpen(false)}
+                    className="mx-3 my-5 rounded-md px-4 py-1.5 text-sm font-bold
+                      bg-[#07478b] hover:bg-[#2273c5] text-white transition
+                      border border-white/30
+                    "
+                  >
+                    Save
+                  </button>
                 </div>
               </div>
             </div>
