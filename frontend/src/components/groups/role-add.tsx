@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from "react";
 import type { Item } from "@/src/types/item";
 
+const SPECIAL_TYPES = ["MEAL", "POTION", "MOUNT"]
+
 type Category = {
   id: string;
   label: string;
@@ -10,15 +12,6 @@ type Category = {
 };
 
 const ROLE_TYPES = ["Healer", "Range DD", "Melee DD", "Support", "Tank", "Battle Mount"];
-
-const ITEMS: Item[] = [
-  { id: "", item_db_name: "T8_2H_DUALSCIMITAR_UNDEAD", item_name: "Galatine Pair", item_category_main: "weapon", item_category_second: "sword" },
-  { id: "", item_db_name: "T8_2H_CLEAVER_HELL", item_name: "Carving Sword", item_category_main: "weapon", item_category_second: "sword" },
-  { id: "", item_db_name: "T8_2H_DUALAXE_KEEPER", item_name: "Bear Paws", item_category_main: "weapon", item_category_second: "axe" },
-  { id: "", item_db_name: "T8_MAIN_RAPIER_MORGANA", item_name: "Bloodletter", item_category_main: "weapon", item_category_second: "dagger" },
-  { id: "", item_db_name: "T8_MAIN_SCIMITAR_MORGANA", item_name: "Clarent Blade", item_category_main: "weapon", item_category_second: "sword" },
-  { id: "", item_db_name: "T8_MAIN_DAGGER_HELL", item_name: "Demonfang", item_category_main: "weapon", item_category_second: "dagger" },
-];
 
 const CATEGORIES: Category[] = [
   {
@@ -56,9 +49,9 @@ const CATEGORIES: Category[] = [
     id: "off_hand",
     label: "Off-Hands",
     subs: [
-      { id: "off_mage", label: "Mage" },
-      { id: "off_hunter", label: "Hunter" },
-      { id: "off_warrior", label: "Warrior" },
+      { id: "mage", label: "Mage" },
+      { id: "hunter", label: "Hunter" },
+      { id: "warrior", label: "Warrior" },
     ],
   },
   {
@@ -80,7 +73,7 @@ const CATEGORIES: Category[] = [
     ],
   },
   {
-    id: "shoe",
+    id: "shoes",
     label: "Shoes",
     subs: [
       { id: "cloth", label: "Cloth Shoes" },
@@ -92,8 +85,8 @@ const CATEGORIES: Category[] = [
     id: "mount",
     label: "Mounts",
     subs: [
-      { id: "regular", label: "Regular Mounts" },
-      { id: "faction", label: "Faction Mounts" },
+      { id: "base", label: "Base Mounts" },
+      { id: "rare", label: "Rare Mounts" },
       { id: "battle", label: "Battle Mounts" },
     ],
   },
@@ -124,6 +117,13 @@ function Slot({
   onRemove?: (slot_id: string) => void,
   className?: string
 }) {
+
+  const img_src: string | null = slot_item
+    ? SPECIAL_TYPES.some(el => slot_item.item_db_name.includes(el))
+      ? `https://render.albiononline.com/v1/item/${slot_item.item_db_name}`
+      : `https://render.albiononline.com/v1/item/T8_${slot_item.item_db_name}`
+    : null;
+
   return (
     <div
       role="button"
@@ -142,9 +142,9 @@ function Slot({
       ].join(" ")}
     >
       {/* item icon */}
-      {slot_item != null && (
+      {(
         <img
-          src={"https://render.albiononline.com/v1/item/" + slot_item.item_db_name}
+          src={img_src != null ? img_src : undefined}
           className="object-contain pointer-events-none select-none"
         />
       )}
@@ -182,8 +182,12 @@ function ItemCard({
   isFocused: boolean;
   onFocus: (id: string) => void;
 }) {
-  // Build icon URL from item_db_name
-  const iconUrl = `https://render.albiononline.com/v1/item/${item.item_db_name}`;
+
+  const img_src: string | null = item
+    ? SPECIAL_TYPES.some(el => item.item_db_name.includes(el))
+      ? `https://render.albiononline.com/v1/item/${item.item_db_name}`
+      : `https://render.albiononline.com/v1/item/T8_${item.item_db_name}`
+    : null;
 
   return (
     <div
@@ -199,7 +203,10 @@ function ItemCard({
       ].join(" ")}
     >
       <div className="shrink-0">
-        <img src={iconUrl} alt={item.item_name} className="w-full h-full rounded-md" />
+        <img
+          src={img_src != null ? img_src : undefined}
+          alt={item.item_name} className="w-full h-full rounded-md"
+        />
       </div>
 
       <div className="min-w-0">
@@ -241,7 +248,7 @@ export default function CoonfigRole() {
   const [itemsError, setItemsError] = useState<string | null>(null);
 
   const [itemInFocus, setItemInFocus] = useState<string>("none");
-  const [slotInFocus, setSlotInFocus] = useState<string>("none");
+  const [slotInFocus, setSlotInFocus] = useState<string | null>(null);
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
   const [openSubCategory, setOpenSubCategoryId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -299,24 +306,35 @@ export default function CoonfigRole() {
 
   // which item is equipped in each slot
   const [slotItems, setSlotItems] = useState<Record<string, Item | null>>({
-    slot_bag: null,
-    slot_cape: null,
-    slot_head: null,
-    slot_armor: null,
-    slot_shoes: null,
-    slot_main_weapon: null,
-    slot_off_hand: null,
-    slot_potion: null,
-    slot_food: null,
-    slot_mount: null,
+    bag: null,
+    cape: null,
+    head: null,
+    armor: null,
+    shoes: null,
+    weapon: null,
+    off_hand: null,
+    potion: null,
+    food: null,
+    mount: null,
   });
 
   function toggleCategory(catId: string) {
-    setOpenCategoryId((prev) => (prev === catId ? null : catId));
+    if (openCategoryId === catId) {
+      setOpenCategoryId(null);
+      setOpenSubCategoryId(null);
+    }
+    else {
+      setOpenCategoryId(catId);
+      setOpenSubCategoryId(null);
+    }
   }
 
   function toggleSubCategory(catId: string) {
     setOpenSubCategoryId((prev) => (prev === catId ? null : catId));
+  }
+
+  function toggleSlot(slotId: string) {
+    setSlotInFocus((prev) => (prev === slotId ? null : slotId));
   }
 
   function equipItemToFocusedSlot(it: Item) {
@@ -341,16 +359,16 @@ export default function CoonfigRole() {
     )
     .filter((i) => {
       // optional: enforce compatibility:
-      if (slotInFocus === "slot_main_weapon") return i.item_category_main === "weapon";
-      if (slotInFocus === "slot_off_hand") return i.item_category_main === "off_hand";
-      if (slotInFocus === "slot_head") return i.item_category_main === "head";
-      if (slotInFocus === "slot_armor") return i.item_category_main === "armor";
-      if (slotInFocus === "slot_shoes") return i.item_category_main === "shoes";
-      if (slotInFocus === "slot_food") return i.item_category_main === "food";
-      if (slotInFocus === "slot_potion") return i.item_category_main === "potion";
-      if (slotInFocus === "slot_mount") return i.item_category_main === "mount";
-      if (slotInFocus === "slot_bag") return i.item_category_main === "bag";
-      if (slotInFocus === "slot_cape") return i.item_category_main === "cape";
+      if (slotInFocus === "weapon") return i.item_category_main === "weapon";
+      if (slotInFocus === "off_hand") return i.item_category_main === "off_hand";
+      if (slotInFocus === "head") return i.item_category_main === "head";
+      if (slotInFocus === "armor") return i.item_category_main === "armor";
+      if (slotInFocus === "shoes") return i.item_category_main === "shoes";
+      if (slotInFocus === "food") return i.item_category_main === "food";
+      if (slotInFocus === "potion") return i.item_category_main === "potion";
+      if (slotInFocus === "mount") return i.item_category_main === "mount";
+      if (slotInFocus === "bag") return i.item_category_main === "bag_cape" && i.item_category_second === "bag";
+      if (slotInFocus === "cape") return i.item_category_main === "bag_cape" && i.item_category_second === "cape";
       return true;
     })
     .filter(i => {
@@ -381,16 +399,17 @@ export default function CoonfigRole() {
     setName("");
     setDescription("");
     setRoleType("");
-    clearSlot("slot_bag");
-    clearSlot("slot_head");
-    clearSlot("slot_cape");
-    clearSlot("slot_main_weapon");
-    clearSlot("slot_armor");
-    clearSlot("slot_off_hand");
-    clearSlot("slot_potion");
-    clearSlot("slot_shoes");
-    clearSlot("slot_food");
-    clearSlot("slot_mount");
+    clearSlot("bag");
+    clearSlot("head");
+    clearSlot("cape");
+    clearSlot("weapon");
+    clearSlot("armor");
+    clearSlot("off_hand");
+    clearSlot("potion");
+    clearSlot("shoes");
+    clearSlot("food");
+    clearSlot("mount");
+    setSlotInFocus(null);
   }
 
   async function onSubmit(e: React.FormEvent) {
@@ -454,90 +473,90 @@ export default function CoonfigRole() {
                   >
                     {/* Row 1 */}
                     <Slot
-                      slot_id="slot_bag"
-                      is_focused={slotInFocus === "slot_bag"}
-                      onFocus={setSlotInFocus}
+                      slot_id="bag"
+                      is_focused={slotInFocus === "bag"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-1 row-start-1"
-                      slot_item={slotItems["slot_bag"]}
+                      slot_item={slotItems["bag"]}
                     />
                     <Slot
-                      slot_id="slot_head"
-                      is_focused={slotInFocus === "slot_head"}
-                      onFocus={setSlotInFocus}
+                      slot_id="head"
+                      is_focused={slotInFocus === "head"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-1"
-                      slot_item={slotItems["slot_head"]}
+                      slot_item={slotItems["head"]}
                     />
                     <Slot
-                      slot_id="slot_cape"
-                      is_focused={slotInFocus === "slot_cape"}
-                      onFocus={setSlotInFocus}
+                      slot_id="cape"
+                      is_focused={slotInFocus === "cape"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-3 row-start-1"
-                      slot_item={slotItems["slot_cape"]}
+                      slot_item={slotItems["cape"]}
                     />
 
                     {/* Row 2 */}
                     <Slot
-                      slot_id="slot_main_weapon"
-                      is_focused={slotInFocus === "slot_main_weapon"}
-                      onFocus={setSlotInFocus}
+                      slot_id="weapon"
+                      is_focused={slotInFocus === "weapon"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-1 row-start-2"
-                      slot_item={slotItems["slot_main_weapon"]}
+                      slot_item={slotItems["weapon"]}
                     />
                     <Slot
-                      slot_id="slot_armor"
-                      is_focused={slotInFocus === "slot_armor"}
-                      onFocus={setSlotInFocus}
+                      slot_id="armor"
+                      is_focused={slotInFocus === "armor"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-2"
-                      slot_item={slotItems["slot_armor"]}
+                      slot_item={slotItems["armor"]}
                     />
                     <Slot
-                      slot_id="slot_off_hand"
-                      is_focused={slotInFocus === "slot_off_hand"}
-                      onFocus={setSlotInFocus}
+                      slot_id="off_hand"
+                      is_focused={slotInFocus === "off_hand"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-3 row-start-2"
-                      slot_item={slotItems["slot_off_hand"]}
+                      slot_item={slotItems["off_hand"]}
                     />
 
                     {/* Row 3 */}
                     <Slot
-                      slot_id="slot_potion"
-                      is_focused={slotInFocus === "slot_potion"}
-                      onFocus={setSlotInFocus}
+                      slot_id="potion"
+                      is_focused={slotInFocus === "potion"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-1 row-start-3"
-                      slot_item={slotItems["slot_potion"]}
+                      slot_item={slotItems["potion"]}
                     />
                     <Slot
-                      slot_id="slot_shoes"
-                      is_focused={slotInFocus === "slot_shoes"}
-                      onFocus={setSlotInFocus}
+                      slot_id="shoes"
+                      is_focused={slotInFocus === "shoes"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-3"
-                      slot_item={slotItems["slot_shoes"]}
+                      slot_item={slotItems["shoes"]}
                     />
                     <Slot
-                      slot_id="slot_food"
-                      is_focused={slotInFocus === "slot_food"}
-                      onFocus={setSlotInFocus}
+                      slot_id="food"
+                      is_focused={slotInFocus === "food"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-3 row-start-3"
-                      slot_item={slotItems["slot_food"]}
+                      slot_item={slotItems["food"]}
                     />
 
                     {/* Extra bottom-center row (Row 4, col 2) */}
                     <Slot
-                      slot_id="slot_mount"
-                      is_focused={slotInFocus === "slot_mount"}
-                      onFocus={setSlotInFocus}
+                      slot_id="mount"
+                      is_focused={slotInFocus === "mount"}
+                      onFocus={toggleSlot}
                       onRemove={clearSlot}
                       className="col-start-2 row-start-4"
-                      slot_item={slotItems["slot_mount"]}
+                      slot_item={slotItems["mount"]}
                     />
                   </div>
                 </div>
