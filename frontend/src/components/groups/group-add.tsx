@@ -12,14 +12,49 @@ const SPECIAL_TYPES = ["MEAL", "POTION", "MOUNT"] as const;
 const base =
     process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
-function getItemIcon(item: Item | null): string | null {
+function getItemIcon(role: RoleConfig | null): string | null {
+    if (!role) return null;
+
+    let item = role.slotItems.weapon;
+
+    if (role.roleType === "Battle Mount") {
+        item = role.slotItems.mount;
+    }
+
     if (!item) return null;
+
     const isSpecial = SPECIAL_TYPES.some((el) =>
         item.item_db_name.includes(el),
     );
     return isSpecial
         ? `https://render.albiononline.com/v1/item/${item.item_db_name}`
         : `https://render.albiononline.com/v1/item/T8_${item.item_db_name}`;
+}
+
+function getRoleColor(role: RoleConfig | null): string {
+    if (!role) return "";
+
+    if (role.roleType === "Tank") {
+        return "bg-[#033c82]";
+    }
+    else if (role.roleType === "Healer") {
+        return "bg-[#0b8717]";
+    }
+    else if (role.roleType === "Support") {
+        return "bg-[#a69603]";
+    }
+    else if (role.roleType === "Range DD") {
+        return "bg-[#c27408]";
+    }
+    else if (role.roleType === "Melee DD") {
+        return "bg-[#ad1d07]";
+    }
+    else if (role.roleType === "Battle Mount") {
+        return "bg-[#6b6b6a]";
+    }
+    else {
+        return "bg-[#666666]";
+    }
 }
 
 export default function GroupAdd() {
@@ -170,7 +205,7 @@ export default function GroupAdd() {
                         <div className="mt-4 grid gap-4 md:grid-cols-[2fr_3fr]">
                             {/* LEFT: group fields + tags */}
                             <div className="space-y-4">
-                                <div className="space-y-2 rounded-xl border border-white/15 bg-black/40 p-3">
+                                <div className="space-y-2">
                                     <div>
                                         <div className="mt-2 mb-1.5 text-m font-medium text-white/90">
                                             Group Name <span className="text-red-400">*</span>
@@ -207,7 +242,7 @@ export default function GroupAdd() {
                                             Works like #mentions (pvp, pve, etc.)
                                         </span>
                                     </div>
-                                    <div className="flex flex-wrap gap-2">
+                                    <div className="flex flex-wrap max-h-32 gap-2 overflow-y-auto">
                                         {tags.map((tag) => (
                                             <button
                                                 key={tag}
@@ -234,7 +269,7 @@ export default function GroupAdd() {
                             <div className="flex h-[480px] flex-col rounded-xl border border-white/15 bg-black/40 p-3">
                                 <div className="mb-2 flex items-center justify-between">
                                     <div>
-                                        <div className="text-xs font-semibold uppercase text-white/60">
+                                        <div className="text-xs font-semibold uppercase text-white">
                                             Group Roles
                                         </div>
                                         <div className="text-[11px] text-white/50">
@@ -268,7 +303,8 @@ export default function GroupAdd() {
                                     <div className="space-y-2">
                                         {roles.map((role, idx) => {
                                             const weaponItem = role.slotItems.weapon;
-                                            const img_src = getItemIcon(weaponItem);
+                                            const img_src = getItemIcon(role);
+                                            const role_bg_color = getRoleColor(role)
 
                                             return (
                                                 <div
@@ -281,7 +317,7 @@ export default function GroupAdd() {
                                                             <img
                                                                 src={img_src}
                                                                 alt={weaponItem?.item_name ?? "weapon"}
-                                                                className="h-10 w-10 object-contain"
+                                                                className="h-full w-full object-contain"
                                                             />
                                                         ) : (
                                                             <span className="text-[10px] text-white/40">
@@ -297,7 +333,11 @@ export default function GroupAdd() {
                                                                 {role.name || "Unnamed role"}
                                                             </span>
                                                             {role.roleType && (
-                                                                <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-wide text-white/70">
+                                                                <span className={[
+                                                                    "rounded-full px-2 py-0.5 text-[10px] ",
+                                                                    " uppercase tracking-wide text-white/100 "
+                                                                ].join(role_bg_color)}
+                                                                >
                                                                     {role.roleType}
                                                                 </span>
                                                             )}
