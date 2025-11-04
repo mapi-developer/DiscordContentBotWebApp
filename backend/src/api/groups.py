@@ -1,3 +1,4 @@
+# test
 from __future__ import annotations
 
 from typing import Dict, List, Optional
@@ -12,11 +13,13 @@ from ..schemas import GroupDB, GroupIn, GroupOut, GroupUpdate
 
 router = APIRouter(prefix="/groups", tags=["auth"])
 
+
 def _clean(s: Optional[str]) -> Optional[str]:
     if s is None:
         return None
     s = s.strip()
     return s or None
+
 
 @router.get("", response_model=List[GroupOut])
 async def list_groups(db: AsyncIOMotorDatabase = Depends(get_db)):
@@ -27,9 +30,10 @@ async def list_groups(db: AsyncIOMotorDatabase = Depends(get_db)):
     )
     out: list[GroupOut] = []
     async for doc in cursor:
-        db_model = GroupDB.model_validate(doc)    # parse raw Mongo doc
+        db_model = GroupDB.model_validate(doc)  # parse raw Mongo doc
         out.append(GroupOut.from_db(db_model))
     return out
+
 
 @router.post("", response_model=GroupOut, status_code=status.HTTP_201_CREATED)
 async def create_group(payload: GroupIn, db: AsyncIOMotorDatabase = Depends(get_db)):
@@ -41,6 +45,7 @@ async def create_group(payload: GroupIn, db: AsyncIOMotorDatabase = Depends(get_
     inserted = await db["groups"].find_one({"_id": res.inserted_id})
     return GroupOut.from_db(GroupDB.model_validate(inserted))
 
+
 @router.get("/{group_id}", response_model=GroupOut)
 async def get_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
     if not ObjectId.is_valid(group_id):
@@ -50,8 +55,11 @@ async def get_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Group not found")
     return GroupOut.from_db(GroupDB.model_validate(doc))
 
+
 @router.patch("/{group_id}", response_model=GroupOut)
-async def update_group(group_id: str, patch: GroupUpdate, db: AsyncIOMotorDatabase = Depends(get_db)):
+async def update_group(
+    group_id: str, patch: GroupUpdate, db: AsyncIOMotorDatabase = Depends(get_db)
+):
     if not ObjectId.is_valid(group_id):
         raise HTTPException(status_code=400, detail="Invalid group id")
 
@@ -79,6 +87,7 @@ async def update_group(group_id: str, patch: GroupUpdate, db: AsyncIOMotorDataba
         raise HTTPException(status_code=404, detail="Group not found")
     return GroupOut.from_db(GroupDB.model_validate(doc))
 
+
 @router.delete("/{group_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)):
     if not ObjectId.is_valid(group_id):
@@ -87,6 +96,7 @@ async def delete_group(group_id: str, db: AsyncIOMotorDatabase = Depends(get_db)
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Group not found")
     return
+
 
 @router.get("/by-uuid/{uuid}", response_model=GroupOut)
 async def get_group_by_uuid(uuid: str, db: AsyncIOMotorDatabase = Depends(get_db)):
