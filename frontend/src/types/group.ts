@@ -4,6 +4,7 @@ export type Group = {
   name: string;
   description?: string | null;
   role_type?: string | null;
+  tags?: string[] | null;
   items: {
     "bag": string
     "cape": string
