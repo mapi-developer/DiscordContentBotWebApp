@@ -1,16 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import type { Item } from "@/src/types/item";
+
 import RoleAddModal, {
     RoleConfig,
 } from "@/src/components/groups/role-add";
+import { createGroup } from "@/src/lib/api";
+import type {
+    GroupCreatePayload,
+    RoleInputPayload,
+} from "@/src/types/group";
 
 const MAX_ROLES = 20;
 const SPECIAL_TYPES = ["MEAL", "POTION", "MOUNT"] as const;
 
-const base =
-    process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const base = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 function getItemIcon(role: RoleConfig | null): string | null {
     if (!role) return null;
@@ -59,6 +63,7 @@ function getRoleColor(role: RoleConfig | null): string {
 
 export default function GroupAdd() {
     const [open, setOpen] = useState(false);
+
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
 
@@ -83,14 +88,13 @@ export default function GroupAdd() {
         setEditingIndex(null);
     }
 
-    function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    function handleTagKeyDown(e: React.KeyboardEvent) {
         // Trigger on Space instead of Enter
         if (e.key !== " " && e.key !== "Spacebar") return; // Spacebar for older browsers
         e.preventDefault(); // don't actually insert a space into the input
 
         const value = tagInput.trim();
         if (!value) return;
-
         if (!tags.includes(value)) {
             setTags((prev) => [...prev, value]);
         }
@@ -133,35 +137,66 @@ export default function GroupAdd() {
     async function handleSaveGroup() {
         if (!canSave) return;
         setSaving(true);
-        try {
-            const payload: any = {
-                name: name.trim(),
-                description: description.trim() || undefined,
-                // NOTE:
-                // Backend /groups endpoint currently only accepts `name` and `description`.
-                // If you extend GroupIn / GroupDB to support these, you can send:
-                //
-                // group_type: tags,
-                // group_party: roles.map(...your serialization here...)
-            };
 
-            const r = await fetch(`${base}/groups`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
+        try {
+            const rolesPayload: RoleInputPayload[] = roles.map((role) => {
+                const items: RoleInputPayload["items"] = {
+                    bag: role.slotItems.bag
+                        ? role.slotItems.bag.item_db_name
+                        : null,
+                    cape: role.slotItems.cape
+                        ? role.slotItems.cape.item_db_name
+                        : null,
+                    head: role.slotItems.head
+                        ? role.slotItems.head.item_db_name
+                        : null,
+                    armor: role.slotItems.armor
+                        ? role.slotItems.armor.item_db_name
+                        : null,
+                    shoes: role.slotItems.shoes
+                        ? role.slotItems.shoes.item_db_name
+                        : null,
+                    weapon: role.slotItems.weapon
+                        ? role.slotItems.weapon.item_db_name
+                        : null,
+                    off_hand: role.slotItems.off_hand
+                        ? role.slotItems.off_hand.item_db_name
+                        : null,
+                    potion: role.slotItems.potion
+                        ? role.slotItems.potion.item_db_name
+                        : null,
+                    food: role.slotItems.food
+                        ? role.slotItems.food.item_db_name
+                        : null,
+                    mount: role.slotItems.mount
+                        ? role.slotItems.mount.item_db_name
+                        : null,
+                };
+
+                return {
+                    uuid: role.uuid,
+                    name: role.name.trim(),
+                    description: role.description.trim() || undefined,
+                    role_type: role.roleType.trim(),
+                    items,
+                };
             });
 
-            if (!r.ok) {
-                const msg = await r.text();
-                alert(`Failed to create group: ${msg || r.status}`);
-                return;
-            }
+            const payload: GroupCreatePayload = {
+                name: name.trim(),
+                description: description.trim() || undefined,
+                tags,
+                roles: rolesPayload,
+            };
+
+            await createGroup(payload);
 
             // Notify groups-list to refresh
             new BroadcastChannel("groups").postMessage("refresh");
-
             setOpen(false);
             resetGroup();
+        } catch (err: any) {
+            alert(err?.message ?? "Failed to create group");
         } finally {
             setSaving(false);
         }

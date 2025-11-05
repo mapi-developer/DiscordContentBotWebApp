@@ -18,6 +18,7 @@ export type SlotId =
   | "mount";
 
 export type RoleConfig = {
+  uuid?: string;
   name: string;
   description: string;
   roleType: string;
@@ -160,7 +161,6 @@ function Slot(props: {
 
   return (
     <button
-      type="button"
       onClick={() => {
         if (!disabled) onFocus(slot_id);
       }}
@@ -191,7 +191,8 @@ function Slot(props: {
       )}
 
       {is_focused && slot_item && !disabled && onRemove && (
-        <button
+        <div
+          role="button"
           onClick={(e) => {
             e.stopPropagation();
             onRemove(slot_id);
@@ -204,7 +205,8 @@ function Slot(props: {
             "bg-[url('/cross.svg')] bg-no-repeat bg-center",
             "h-[30%] w-[30%]",
           ].join(" ")}
-        />
+        >
+        </div>
       )}
     </button>
   );
@@ -274,6 +276,7 @@ function ItemCard(props: {
 
 function makeEmptyRole(): RoleConfig {
   return {
+    uuid: undefined,
     name: "",
     description: "",
     roleType: "",
@@ -735,7 +738,6 @@ export default function RoleAddModal({
                 <div className="flex">
                   <div className="relative w-[60%]">
                     <button
-                      type="button"
                       // onClick={() => handleSearch?.(search)} // or your own search fn
                       className="absolute top-1/2 -translate-y-1/2 grid place-items-center
                         h-10 w-10 rounded-md text-white/70 hover:text-white/90 hover:bg-white/10

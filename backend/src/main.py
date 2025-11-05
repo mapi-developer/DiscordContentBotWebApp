@@ -48,3 +48,4 @@ async def init_indexes():
     db = get_db()
     await db["users"].create_index("discord.id", unique=True)
     await db["groups"].create_index("uuid", unique=True)
+    await db["roles"].create_index("uuid", unique=True)
