@@ -59,6 +59,9 @@ export default function GroupsList({ initialGroups }: Props) {
   const [rolesByUuid, setRolesByUuid] = useState<Record<string, RoleInputPayload>>({});
   const [loadingRoles, setLoadingRoles] = useState(false);
 
+  const [selectedGroup, setSelectedGroup] = useState<Group | null>(null);
+  const closeModal = () => setSelectedGroup(null);
+
   async function refreshGroups() {
     setLoadingGroups(true);
     try {
@@ -259,10 +262,17 @@ export default function GroupsList({ initialGroups }: Props) {
             const rolePreviews = getGroupRolePreviews(g);
             const totalRoles = g.roles?.length ?? 0;
 
+            const handleClick = () => setSelectedGroup(g);
+
             return (
               <div
                 key={g.uuid ?? g.id}
-                className="rounded-xl border border-white/10 bg-black/40 p-4"
+                onClick={handleClick}
+                className={[
+                  "rounded-xl border border-white/10 bg-black/40 p-4 ",
+                  "cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg ",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 hover:bg-[#11234d]"
+                ].join()}
               >
                 <div className="gap-3">
                   {/* LEFT: name + description */}
@@ -310,7 +320,7 @@ export default function GroupsList({ initialGroups }: Props) {
                               return (
                                 <div
                                   key={role.uuid}
-                                  className="mx-0.5 h-16 w-16 overflow-hidden border border-black/60 bg-black/60 shadow-sm"
+                                  className="mx-0.5 h-16 w-16 overflow-hidden border border-black/60 bg-black/60 shadow-sm rounded-xl"
                                   title={label}
                                 >
                                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -333,7 +343,7 @@ export default function GroupsList({ initialGroups }: Props) {
                       )}
 
                       {isMine && (
-                        <div className="mr-6 ml-1 items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-300">
+                        <div className="mr-7 ml-1 items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-500">
                           Your group
                         </div>
                       )}
@@ -343,6 +353,126 @@ export default function GroupsList({ initialGroups }: Props) {
               </div>
             );
           })}
+        </div>
+      )}
+      {selectedGroup && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          onClick={closeModal}
+        >
+          <div
+            className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#020617] p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              type="button"
+              onClick={closeModal}
+              className="absolute right-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-white/5 text-sm text-white/70 hover:bg-white/10 hover:text-white"
+            >
+              ✕
+            </button>
+
+            {/* Header */}
+            <div className="pr-10">
+              <h2 className="text-lg font-semibold tracking-tight text-white">
+                {selectedGroup.name}
+              </h2>
+              <p className="mt-1 text-sm text-white/70">
+                {selectedGroup.description ||
+                  "No description provided for this group."}
+              </p>
+            </div>
+
+            {/* Meta info */}
+            <div className="mt-4 grid gap-3 text-xs text-white/70 sm:grid-cols-2">
+              <div className="space-y-1">
+                <div className="font-semibold text-white/80">
+                  Group details
+                </div>
+                <div>
+                  <span className="text-white/50">ID: </span>
+                  <code className="break-all text-[11px] text-white/80">
+                    {selectedGroup.id}
+                  </code>
+                </div>
+                {selectedGroup.uuid && (
+                  <div>
+                    <span className="text-white/50">UUID: </span>
+                    <code className="break-all text-[11px] text-white/80">
+                      {selectedGroup.uuid}
+                    </code>
+                  </div>
+                )}
+                {selectedGroup.created_at && (
+                  <div>
+                    <span className="text-white/50">Created at: </span>
+                    {new Date(
+                      selectedGroup.created_at,
+                    ).toLocaleString()}
+                  </div>
+                )}
+                {selectedGroup.creator_id && (
+                  <div>
+                    <span className="text-white/50">Creator ID: </span>
+                    {selectedGroup.creator_id}
+                  </div>
+                )}
+              </div>
+
+              {/* Tags */}
+              <div className="space-y-1">
+                <div className="font-semibold text-white/80">Tags</div>
+                {selectedGroup.tags && selectedGroup.tags.length ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {selectedGroup.tags.map((tag, idx) => (
+                      <span
+                        key={`${tag}-${idx}`}
+                        className="rounded-full bg-white/5 px-2 py-0.5 text-[11px] text-white/80"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-white/50 text-[11px]">
+                    No tags assigned to this group.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {/* Roles (UUIDs) */}
+            <div className="mt-6 border-t border-white/10 pt-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-white">
+                  Roles in this group
+                </h3>
+                {selectedGroup.roles && (
+                  <span className="text-[11px] text-white/60">
+                    {selectedGroup.roles.length} total
+                  </span>
+                )}
+              </div>
+
+              {selectedGroup.roles && selectedGroup.roles.length ? (
+                <div className="mt-3 flex flex-wrap gap-1.5 text-[11px] text-white/80">
+                  {selectedGroup.roles.map((roleUuid, idx) => (
+                    <span
+                      key={`${roleUuid}-${idx}`}
+                      className="rounded-md border border-white/15 bg-white/5 px-2 py-0.5 font-mono"
+                    >
+                      {roleUuid}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="mt-2 text-xs text-white/60">
+                  This group has no roles yet.
+                </p>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
