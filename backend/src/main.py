@@ -7,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from .api.auth.discord import router as discord_router
 from .api.groups import router as groups_router
 from .api.items import router as items_router
+from .api.roles import router as roles_router
 from .core.settings import settings
 from .db.mongo import get_db
 
@@ -41,6 +42,7 @@ async def health():
 app.include_router(discord_router)
 app.include_router(groups_router)
 app.include_router(items_router)
+app.include_router(roles_router)
 
 
 @app.on_event("startup")

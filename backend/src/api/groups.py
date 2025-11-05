@@ -23,27 +23,13 @@ def _clean(s: Optional[str]) -> Optional[str]:
 
 @router.get("", response_model=List[GroupOut])
 async def list_groups(db: AsyncIOMotorDatabase = Depends(get_db)):
-    cursor = (
-        db["groups"]
-        .find(
-            {},
-            projection={
-                "_id": 1,
-                "uuid": 1,
-                "name": 1,
-                "description": 1,
-                "tags": 1,
-                "roles": 1,
-                "creator_id": 1,
-                "created_at": 1,
-            },
-        )
-        .sort("created_at", -1)
-    )
+    # Fetch full documents so GroupDB / GroupOut see all fields,
+    # including creator_id, items, tags, etc.
+    cursor = db["groups"].find({}).sort("created_at", -1)
 
-    out: List[GroupOut] = []
+    out: list[GroupOut] = []
     async for doc in cursor:
-        db_model = GroupDB.model_validate(doc)
+        db_model = GroupDB.model_validate(doc)  # parse raw Mongo doc
         out.append(GroupOut.from_db(db_model))
 
     return out
