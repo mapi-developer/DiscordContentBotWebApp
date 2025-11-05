@@ -61,7 +61,7 @@ function FeatureCard({ title, desc }: { title: string; desc: string }) {
 
 function Callout({ title, desc }: { title: string; desc: string }) {
     return (
-        <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/5 to-white/[0.02] p-6">
+        <div className="rounded-2xl border border-white/10 bg-linear-to-br from-white/5 to-white/2 p-6">
             <h4 className="text-base font-semibold">{title}</h4>
             <p className="mt-2 text-sm text-[#9fb0c9]">{desc}</p>
         </div>

@@ -12,13 +12,13 @@ from .bson import PyObjectId
 class RoleIn(BaseModel):
     """
     Payload used when creating / attaching a role to a group.
-
-    We only store item_db_name strings for slots on the backend.
     """
 
     uuid: Optional[str] = Field(
         default=None,
-        description="If present, we try to reuse / version an existing role with this uuid.",
+        description=(
+            "If present, we try to reuse / version an existing role " "with this uuid."
+        ),
     )
     name: str = Field(min_length=1, max_length=120)
     description: Optional[str] = Field(default="", max_length=500)
@@ -36,6 +36,14 @@ class RoleDB(BaseModel):
     description: Optional[str] = Field(default="", max_length=500)
     role_type: str = Field(min_length=1, max_length=80)
     items: Dict[str, Optional[str]] = Field(default_factory=dict)
+
+    # NEW: who created this role (Discord id)
+    creator_id: Optional[str] = Field(
+        default=None,
+        description="Discord user id of the creator (same as group creator).",
+        max_length=64,
+    )
+
     created_at: datetime = Field(default_factory=datetime.utcnow)
 
     model_config = ConfigDict(
@@ -52,6 +60,8 @@ class RoleOut(BaseModel):
     description: Optional[str]
     role_type: str
     items: Dict[str, Optional[str]]
+
+    creator_id: Optional[str]
     created_at: datetime
 
     @classmethod
@@ -63,5 +73,6 @@ class RoleOut(BaseModel):
             description=db.description,
             role_type=db.role_type,
             items=db.items,
+            creator_id=db.creator_id,
             created_at=db.created_at,
         )

@@ -54,13 +54,14 @@ async def create_group(
     payload: GroupIn,
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
-    # 1) Create the group first with an empty roles list
+    # normalize creator id
     creator_id = (payload.creator_id or "").strip() or "unknown"
 
+    # 1) Create the group first with an empty roles list
     db_model = GroupDB(
         name=payload.name.strip(),
         description=_clean(payload.description),
-        tags=payload.tags or [],
+        tags=[t.strip() for t in payload.tags if t.strip()],
         roles=[],
         creator_id=creator_id,
     )
@@ -90,6 +91,7 @@ async def create_group(
             "description": _clean(role.description),
             "role_type": role.role_type.strip(),
             "items": role.items or {},
+            "creator_id": creator_id,
         }
 
         existing = None
@@ -166,7 +168,6 @@ async def update_group(
     if not ObjectId.is_valid(group_id):
         raise HTTPException(status_code=400, detail="Invalid group id")
 
-    # Build the $set document from whatever fields are present
     update_doc: Dict[str, object] = {}
 
     if patch.name is not None:
@@ -174,13 +175,12 @@ async def update_group(
     if patch.description is not None:
         update_doc["description"] = _clean(patch.description)
     if patch.tags is not None:
-        update_doc["tags"] = patch.tags
+        update_doc["tags"] = [t.strip() for t in patch.tags if t.strip()]
     if patch.roles is not None:
         update_doc["roles"] = patch.roles
     if patch.creator_id is not None:
         update_doc["creator_id"] = patch.creator_id.strip()
 
-    # Nothing to update → just return current doc (or 404)
     if not update_doc:
         doc = await db["groups"].find_one({"_id": ObjectId(group_id)})
         if not doc:
@@ -193,7 +193,6 @@ async def update_group(
             {"$set": update_doc},
         )
     except DuplicateKeyError:
-        # only relevant if you add a unique index on name
         raise HTTPException(
             status_code=409,
             detail="Group name already exists",
@@ -218,7 +217,6 @@ async def delete_group(
     if res.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Group not found")
 
-    # NOTE: roles are not deleted here; you can add a cascade delete later if needed.
     return
 
 

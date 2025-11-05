@@ -1,11 +1,10 @@
 "use client";
 
 import React, { useState } from "react";
-
 import RoleAddModal, {
     RoleConfig,
 } from "@/src/components/groups/role-add";
-import { createGroup } from "@/src/lib/api";
+import { createGroup, getMe } from "@/src/lib/api";
 import type {
     GroupCreatePayload,
     RoleInputPayload,
@@ -76,8 +75,7 @@ export default function GroupAdd() {
 
     const [saving, setSaving] = useState(false);
 
-    const canSave =
-        name.trim().length > 0 && roles.length > 0 && !saving;
+    const canSave = name.trim().length > 0 && roles.length > 0 && !saving;
 
     function resetGroup() {
         setName("");
@@ -139,17 +137,18 @@ export default function GroupAdd() {
         setSaving(true);
 
         try {
+            const me = await getMe();
+            const creatorId = me?.user.discord?.id;
+            if (!creatorId) {
+                alert("You must be logged in with Discord to create a group.");
+                return;
+            }
+
             const rolesPayload: RoleInputPayload[] = roles.map((role) => {
                 const items: RoleInputPayload["items"] = {
-                    bag: role.slotItems.bag
-                        ? role.slotItems.bag.item_db_name
-                        : null,
-                    cape: role.slotItems.cape
-                        ? role.slotItems.cape.item_db_name
-                        : null,
-                    head: role.slotItems.head
-                        ? role.slotItems.head.item_db_name
-                        : null,
+                    bag: role.slotItems.bag ? role.slotItems.bag.item_db_name : null,
+                    cape: role.slotItems.cape ? role.slotItems.cape.item_db_name : null,
+                    head: role.slotItems.head ? role.slotItems.head.item_db_name : null,
                     armor: role.slotItems.armor
                         ? role.slotItems.armor.item_db_name
                         : null,
@@ -165,16 +164,14 @@ export default function GroupAdd() {
                     potion: role.slotItems.potion
                         ? role.slotItems.potion.item_db_name
                         : null,
-                    food: role.slotItems.food
-                        ? role.slotItems.food.item_db_name
-                        : null,
+                    food: role.slotItems.food ? role.slotItems.food.item_db_name : null,
                     mount: role.slotItems.mount
                         ? role.slotItems.mount.item_db_name
                         : null,
                 };
 
                 return {
-                    uuid: role.uuid,
+                    uuid: role.uuid, // may be undefined for brand-new roles
                     name: role.name.trim(),
                     description: role.description.trim() || undefined,
                     role_type: role.roleType.trim(),
@@ -187,15 +184,18 @@ export default function GroupAdd() {
                 description: description.trim() || undefined,
                 tags,
                 roles: rolesPayload,
+                creator_id: creatorId,
             };
 
             await createGroup(payload);
 
-            // Notify groups-list to refresh
+            // notify groups list to refresh
             new BroadcastChannel("groups").postMessage("refresh");
+
             setOpen(false);
             resetGroup();
         } catch (err: any) {
+            console.error(err);
             alert(err?.message ?? "Failed to create group");
         } finally {
             setSaving(false);
