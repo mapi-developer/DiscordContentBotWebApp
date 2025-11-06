@@ -135,10 +135,8 @@ async def get_group(
     group_id: str,
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
-    if not ObjectId.is_valid(group_id):
-        raise HTTPException(status_code=400, detail="Invalid group id")
-
-    doc = await db["groups"].find_one({"_id": ObjectId(group_id)})
+    # group_id is now the *uuid* string created by uuid4(), no ObjectId checks
+    doc = await db["groups"].find_one({"uuid": group_id})
     if not doc:
         raise HTTPException(status_code=404, detail="Group not found")
 

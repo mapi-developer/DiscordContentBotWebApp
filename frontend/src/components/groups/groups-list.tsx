@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { getMe } from "@/src/lib/api";
 import type { Group } from "@/src/types/group";
@@ -264,10 +265,12 @@ export default function GroupsList({ initialGroups }: Props) {
 
             const handleClick = () => setSelectedGroup(g);
 
+            const router = useRouter();
+
             return (
               <div
                 key={g.uuid ?? g.id}
-                onClick={handleClick}
+                onClick={() => router.push(`/groups/${g.uuid}`)}
                 className={[
                   "rounded-xl border border-white/10 bg-black/40 p-4 ",
                   "cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg ",
