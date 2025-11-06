@@ -1,32 +1,82 @@
 import Link from "next/link";
+import type { Group } from "@/src/types/group";
+import { API_BASE } from "@/src/lib/api";
+import CopyUuidButton from "@/src/components/common/copy-uuid-button";
+import GroupShow from "@/src/components/groups/role-show";
 
-export const dynamic = "force-dynamic";
+const SPECIAL_TYPES = ["MEAL", "POTION", "MOUNT"] as const;
 
-type Group = {
+type Role = {
     id: string;
     uuid: string;
     name: string;
     description?: string | null;
-    role_type?: string | null;
-    tags?: string[] | null;
-    items: Record<string, string>;
-    creator_id: string;
-    created_at?: string;
+    role_type: string;
+    items: Record<string, string | null>;
+    created_at: string;
 };
 
 type PageProps = {
+    // 👇 in Next 15 / React 19 app router, params is a Promise
     params: Promise<{ groupId: string }>;
 };
 
-export default async function GroupDetailPage({ params }: PageProps) {
-    const { groupId } = await params;
-    const base = process.env.BACKEND_URL ?? "http://localhost:8000";
-    const res = await fetch(`${base}/groups/${groupId}`, {
+export const dynamic = "force-dynamic";
+
+function buildItemIconUrl(itemDbName: string | null | undefined): string | null {
+    if (!itemDbName) return null;
+    const isSpecial = SPECIAL_TYPES.some((el) => itemDbName.includes(el));
+    return isSpecial
+        ? `https://render.albiononline.com/v1/item/${itemDbName}`
+        : `https://render.albiononline.com/v1/item/T8_${itemDbName}`;
+}
+
+function getRoleMainItemDbName(role: Role): string | null {
+    // Default: main weapon
+    let db = role.items?.weapon ?? null;
+
+    // For battle mounts use mount slot if present
+    if (role.role_type === "Battle Mount") {
+        db = role.items?.mount ?? db;
+    }
+
+    return db ?? null;
+}
+
+async function fetchGroup(groupUuid: string): Promise<Group | null> {
+    // Uses your /groups/by-uuid/{uuid} endpoint
+    const res = await fetch(`${API_BASE}/groups/${groupUuid}`, {
         cache: "no-store",
     });
 
-    if (!res.ok) {
-        // Simple 404-ish fallback – you can later switch to notFound() if you want
+    if (!res.ok) return null;
+    return res.json();
+}
+
+async function fetchRolesForGroup(group: Group): Promise<Role[]> {
+    const rawRoles = (group as any).roles as string[] | undefined;
+    if (!rawRoles || !Array.isArray(rawRoles) || rawRoles.length === 0) {
+        return [];
+    }
+
+    const params = new URLSearchParams();
+    params.set("uuids", rawRoles.join(","));
+
+    const res = await fetch(`${API_BASE}/roles?${params.toString()}`, {
+        cache: "no-store",
+    });
+
+    if (!res.ok) return [];
+    return res.json();
+}
+
+export default async function GroupDetailPage({ params }: PageProps) {
+    // 🔑 unwrap params
+    const { groupId } = await params; // groupId is actually the group UUID in the URL
+
+    const group = await fetchGroup(groupId);
+
+    if (!group) {
         return (
             <main className="min-h-screen bg-[#020617] text-white">
                 <div className="mx-auto max-w-4xl px-4 py-8 space-y-4">
@@ -37,40 +87,25 @@ export default async function GroupDetailPage({ params }: PageProps) {
                         <span className="text-lg">←</span>
                         <span>Back to groups</span>
                     </Link>
+
                     <h1 className="text-2xl font-semibold tracking-tight">
                         Group not found
                     </h1>
                     <p className="text-sm text-white/60">
-                        We couldn't find a group with id{" "}
-                        <code className="text-xs">{groupId}</code>.
+                        We couldn't find a group with uuid{" "}
+                        <code className="text-xs break-all">{groupId}</code>.
                     </p>
                 </div>
             </main>
         );
     }
 
-    const group: Group = await res.json();
-
-    const createdAt = group.created_at
-        ? new Date(group.created_at)
-        : null;
-
-    const slotsOrder: { key: keyof Group["items"]; label: string }[] = [
-        { key: "weapon", label: "Weapon" },
-        { key: "off_hand", label: "Off hand" },
-        { key: "head", label: "Head" },
-        { key: "armor", label: "Armor" },
-        { key: "shoes", label: "Shoes" },
-        { key: "cape", label: "Cape" },
-        { key: "bag", label: "Bag" },
-        { key: "potion", label: "Potion" },
-        { key: "food", label: "Food" },
-        { key: "mount", label: "Mount" },
-    ];
+    const createdAt = group.created_at ? new Date(group.created_at) : null;
+    const roles = await fetchRolesForGroup(group);
 
     return (
         <main className="min-h-screen bg-[#020617] text-white">
-            <div className="mx-auto max-w-4xl px-4 py-8 space-y-6">
+            <div className="mx-auto max-w-5xl px-4 py-8 space-y-8">
                 {/* Back link */}
                 <div className="flex items-center justify-between gap-4">
                     <Link
@@ -82,105 +117,127 @@ export default async function GroupDetailPage({ params }: PageProps) {
                     </Link>
                 </div>
 
-                {/* Header */}
-                <header className="space-y-2">
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        {group.name}
-                    </h1>
-                    <p className="text-sm text-white/70">
-                        {group.description || "No description provided."}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-3 text-[11px] text-white/60">
-                        {createdAt && (
-                            <span>
-                                Created{" "}
-                                {createdAt.toLocaleDateString()}{" "}
-                                at {createdAt.toLocaleTimeString()}
-                            </span>
-                        )}
-                        <span>
-                            ID:{" "}
-                            <code className="text-[10px]">
-                                {group.id}
-                            </code>
-                        </span>
-                        <span>
-                            UUID:{" "}
-                            <code className="text-[10px]">
-                                {group.uuid}
-                            </code>
-                        </span>
-                        <span>Creator: {group.creator_id}</span>
+                {/* Group header */}
+                <section className="space-y-3 rounded-2xl border border-white/10 bg-black/40 p-6">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="space-y-1">
+                            <h1 className="text-2xl font-semibold tracking-tight">
+                                {group.name}
+                            </h1>
+                            <p className="text-sm text-white/70">
+                                {group.description || "No description provided for this group."}
+                            </p>
+                        </div>
                     </div>
-                </header>
 
-                {/* Tags / role_type */}
-                <section className="space-y-2">
-                    <h2 className="text-sm font-semibold text-white">
-                        Tags & type
-                    </h2>
-                    <div className="flex flex-wrap gap-2 text-xs">
-                        {group.role_type && (
-                            <span className="inline-flex items-center rounded-full bg-white/5 px-2 py-0.5 text-white/80">
-                                Role type: {group.role_type}
-                            </span>
-                        )}
-                        {group.tags && group.tags.length > 0 ? (
-                            group.tags.map((tag, idx) => (
-                                <span
-                                    key={`${tag}-${idx}`}
-                                    className="inline-flex items-center rounded-full bg-white/5 px-2 py-0.5 text-white/80"
-                                >
-                                    {tag}
-                                </span>
-                            ))
-                        ) : (
-                            <span className="text-white/50">
-                                No tags assigned.
-                            </span>
-                        )}
+                    <div className="mt-3 grid gap-2 text-[11px] text-white/65 sm:grid-cols-2">
+                        <div className="space-y-1">
+                            {createdAt && (
+                                <div>
+                                    <span className="text-white/45">Created: </span>
+                                    {createdAt.toLocaleDateString()}{" "}
+                                    {createdAt.toLocaleTimeString()}
+                                </div>
+                            )}
+                            <div>
+                                <span className="text-white/45">Creator ID: </span>
+                                {group.creator_id || (
+                                    <span className="text-white/40">unknown</span>
+                                )}
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <span className="text-white/45">Group UUID:</span>
+                                {group.uuid && (
+                                    <CopyUuidButton value={group.uuid} />
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </section>
 
-                {/* Items table */}
+                {/* Roles list */}
                 <section className="space-y-3">
-                    <h2 className="text-sm font-semibold text-white">
-                        Equipped items
-                    </h2>
-                    <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
-                        <table className="min-w-full text-left text-xs">
-                            <thead className="border-b border-white/10 bg-white/5">
-                                <tr>
-                                    <th className="px-4 py-2 font-semibold text-white/80">
-                                        Slot
-                                    </th>
-                                    <th className="px-4 py-2 font-semibold text-white/80">
-                                        Item db name
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {slotsOrder.map(({ key, label }) => {
-                                    const value = group.items?.[key as string];
-                                    return (
-                                        <tr
-                                            key={key as string}
-                                            className="border-t border-white/5 text-white/80"
-                                        >
-                                            <td className="px-4 py-2 text-white/70">
-                                                {label}
-                                            </td>
-                                            <td className="px-4 py-2 font-mono text-[11px]">
-                                                {value || <span className="text-white/40">—</span>}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
+                    <div className="flex items-center justify-between">
+                        <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
+                            Roles in this group
+                        </h2>
+                        <span className="text-[11px] text-white/60">
+                            {roles.length} role{roles.length === 1 ? "" : "s"}
+                        </span>
                     </div>
+
+                    {!roles.length && (
+                        <div className="rounded-xl border border-dashed border-white/20 bg-black/40 px-4 py-6 text-sm text-white/70">
+                            This group has no roles yet.
+                        </div>
+                    )}
+
+                    {!!roles.length && (
+                        <div className="space-y-2">
+                            {roles.map((role) => {
+                                const mainItemDb = getRoleMainItemDbName(role);
+                                const iconUrl = buildItemIconUrl(mainItemDb);
+                                const created =
+                                    role.created_at && new Date(role.created_at);
+
+                                return (
+                                    <div
+                                        key={role.uuid}
+                                        className={[
+                                            "flex gap-3 rounded-xl border border-white/10 bg-black/40 p-4 ",
+                                            "cursor-pointer transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-lg ",
+                                            "focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 hover:bg-[#11234d]"
+                                        ].join()}
+                                    >
+                                        {/* Set preview */}
+                                        <div className="flex h-16 w-16 items-center justify-center rounded-xl border border-white/15 bg-black/70">
+                                            {iconUrl ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={iconUrl}
+                                                    alt={role.name}
+                                                    className="h-full w-full object-contain"
+                                                />
+                                            ) : (
+                                                <span className="text-[10px] text-white/45 text-center px-1">
+                                                    No set preview
+                                                </span>
+                                            )}
+                                        </div>
+
+                                        {/* Role text */}
+                                        <div className="min-w-0 flex-1 space-y-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <p className="truncate text-sm font-semibold text-white">
+                                                    {role.name}
+                                                </p>
+                                                <span className="inline-flex items-center rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/80">
+                                                    {role.role_type}
+                                                </span>
+                                            </div>
+
+                                            {role.description && (
+                                                <p className="line-clamp-2 text-xs text-white/70">
+                                                    {role.description}
+                                                </p>
+                                            )}
+
+                                            {created && (
+                                                <p className="text-[10px] text-white/45">
+                                                    Role created {created.toLocaleDateString()}
+                                                </p>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
                 </section>
             </div>
+            <GroupShow />
         </main>
     );
 }

@@ -130,13 +130,12 @@ async def create_group(
     return GroupOut.from_db(group)
 
 
-@router.get("/{group_id}", response_model=GroupOut)
-async def get_group(
-    group_id: str,
+@router.get("/{uuid}", response_model=GroupOut)
+async def get_group_by_uuid(
+    uuid: str,
     db: AsyncIOMotorDatabase = Depends(get_db),
 ):
-    # group_id is now the *uuid* string created by uuid4(), no ObjectId checks
-    doc = await db["groups"].find_one({"uuid": group_id})
+    doc = await db["groups"].find_one({"uuid": uuid})
     if not doc:
         raise HTTPException(status_code=404, detail="Group not found")
 
@@ -202,15 +201,3 @@ async def delete_group(
         raise HTTPException(status_code=404, detail="Group not found")
 
     return
-
-
-@router.get("/by-uuid/{uuid}", response_model=GroupOut)
-async def get_group_by_uuid(
-    uuid: str,
-    db: AsyncIOMotorDatabase = Depends(get_db),
-):
-    doc = await db["groups"].find_one({"uuid": uuid})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Group not found")
-
-    return GroupOut.from_db(GroupDB.model_validate(doc))

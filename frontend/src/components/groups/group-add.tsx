@@ -370,7 +370,7 @@ export default function GroupAdd() {
                                                             {role.roleType && (
                                                                 <span className={[
                                                                     "rounded-full px-2 py-0.5 text-[10px] ",
-                                                                    " uppercase tracking-wide text-white/100 "
+                                                                    " uppercase tracking-wide text-white "
                                                                 ].join(role_bg_color)}
                                                                 >
                                                                     {role.roleType}
