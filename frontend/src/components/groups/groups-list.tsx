@@ -255,7 +255,7 @@ export default function GroupsList({ initialGroups }: Props) {
       )}
 
       {/* Groups list */}
-      {!!visibleGroups.length && (
+      {!!visibleGroups.length && !showLoginHint && (
         <div className="space-y-3">
           {visibleGroups.map((g) => {
             const isMine = discordId && g.creator_id === discordId;
