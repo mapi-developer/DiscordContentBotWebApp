@@ -5,7 +5,7 @@ import GroupAdd from "@/src/components/groups/group-add";
 export const dynamic = "force-dynamic";
 
 export default async function GroupsPage() {
-  const base = process.env.BACKEND_URL ?? "http://localhost:8000";
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
   const r = await fetch(`${base}/groups`, { cache: "no-store" });
   const groups = r.ok ? await r.json() : [];

@@ -33,6 +33,14 @@ export default function Header() {
                         >
                             Groups
                         </button>
+                        <button
+                            onClick={() => {
+                                window.location.href = `/contents`;
+                            }}
+                            className="rounded-md px-3 py-1.5 text-sm font-semibold bg-[#19244d] hover:bg-[#1a2b69] border border-[#253159] transition"
+                        >
+                            Contents
+                        </button>
                     </div>
 
                     <nav className="flex items-center gap-2">
@@ -51,7 +59,6 @@ export default function Header() {
                 open={registerOpen}
                 onClose={() => setRegisterOpen(false)}
             />
-
         </>
     );
 }
