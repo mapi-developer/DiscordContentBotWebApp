@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 # from .content_service import init_content
 # If you're running as a simple script, use:
 from content_service import init_content
+from db import get_db
 
 load_dotenv()
 
@@ -130,7 +131,7 @@ async def content_create(
         time_utc=time_utc_dt,
         title=title,
         description=description,
-        created_by=str(interaction.user.id),  # <- who created
+        created_by=str(interaction.user.id),
         group_ids=group_ids,
         tags=[],
         location=location,
@@ -140,7 +141,41 @@ async def content_create(
     time_str = content.time_utc.strftime("%d.%m.%y %H:%M")
     location_str = content.location or "Not specified"
 
-    # 1) Ephemeral confirmation just for the creator
+    # --- build groups + roles section from Mongo ---
+    db = get_db()
+    groups_col = db["groups"]
+
+    group_blocks: list[str] = []
+
+    for idx, group_id in enumerate(content.group_ids, start=1):
+        # Adjust filter if your schema uses ObjectId instead of string
+        group_doc = await groups_col.find_one({"uuid": group_id})
+        if not group_doc:
+            group_blocks.append(f"**Group {idx}:** (not found in DB)")
+            continue
+
+        group_name = group_doc.get("name", f"Group {idx}")
+        roles = group_doc.get("roles", [])
+
+        lines: list[str] = [f"**Group {idx}: {group_name}**"]
+
+        # roles is expected to be a list of dicts with 'name'
+        for role_index, role in enumerate(roles, start=1):
+            if isinstance(role, dict):
+                role_name = role.get("name", f"Role {role_index}")
+            else:
+                # fallback if role is just a string
+                role_name = str(role)
+
+            lines.append(f"{role_index}. {role_name}")
+
+        group_blocks.append("\n".join(lines))
+
+    groups_section = (
+        "\n\n".join(group_blocks) if group_blocks else "No groups attached."
+    )
+
+    # 1) Ephemeral confirmation for creator
     await interaction.response.send_message(
         f"✅ Content created:\n"
         f"**Title:** {content.title}\n"
@@ -150,17 +185,17 @@ async def content_create(
         ephemeral=True,
     )
 
-    # 2) Public ping message in the same channel
+    # 2) Public ping message with groups & roles
     announcement = (
         f"📢 **New content created!**\n"
         f"Created by: {interaction.user.mention}\n"
         f"**Title:** {content.title}\n"
         f"**Description:** {content.description}\n"
         f"**Time (UTC):** {time_str}\n"
-        f"**Location:** {location_str}"
+        f"**Location:** {location_str}\n\n"
+        f"{groups_section}"
     )
 
-    # This sends a normal message in the channel where the command was used
     await interaction.followup.send(announcement)
 
 
