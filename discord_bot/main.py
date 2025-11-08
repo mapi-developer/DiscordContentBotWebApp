@@ -61,7 +61,7 @@ async def ping(interaction: discord.Interaction):
 @bot.tree.command(name="content_create", description="Create new content event")
 @app_commands.guilds(discord.Object(id=GUILD_ID))
 @app_commands.describe(
-    date_utc="Date in UTC, format DD.MM.YY (e.g. 10.09.25)",
+    date_utc="Date in UTC, format DD.MM.YY (e.g. 21.09.25)",
     time_utc="Time in UTC, 24h format HH:MM (e.g. 18:00)",
     title="Content title",
     description="Content description",
@@ -94,7 +94,7 @@ async def content_create(
         d: date = datetime.strptime(date_utc, "%d.%m.%y").date()
     except ValueError:
         await interaction.response.send_message(
-            "❌ Invalid **date** format.\n" "Use `DD.MM.YY`, e.g. `10.09.25`.",
+            "❌ Invalid **date** format.\n" "Use `DD.MM.YY`, e.g. `21.09.25`.",
             ephemeral=True,
         )
         return
@@ -137,66 +137,78 @@ async def content_create(
         location=location,
     )
 
-    # Format time for display: "10.09.25 18:00"
-    time_str = content.time_utc.strftime("%d.%m.%y %H:%M")
+    # Format date/time for display
+    date_str = content.time_utc.strftime("%d.%m.%y")
+    time_str = content.time_utc.strftime("%H:%M")
     location_str = content.location or "Not specified"
 
-    # --- build groups + roles section from Mongo ---
+    # --- build embeds for Parties (groups + role NAMES) ---
     db = get_db()
     groups_col = db["groups"]
+    roles_col = db["roles"]
 
-    group_blocks: list[str] = []
+    party_embeds: list[discord.Embed] = []
 
     for idx, group_id in enumerate(content.group_ids, start=1):
-        # Adjust filter if your schema uses ObjectId instead of string
         group_doc = await groups_col.find_one({"uuid": group_id})
         if not group_doc:
-            group_blocks.append(f"**Group {idx}:** (not found in DB)")
+            embed = discord.Embed(
+                title=f"Party {idx}",
+                description="Group not found in database.",
+                color=discord.Color.blurple(),
+            )
+            party_embeds.append(embed)
             continue
 
-        group_name = group_doc.get("name", f"Group {idx}")
-        roles = group_doc.get("roles", [])
+        # group_doc.get("name") or f"Party {idx}"
+        group_name = f"Party {idx}"
+        role_uuids = group_doc.get("roles", [])
 
-        lines: list[str] = [f"**Group {idx}: {group_name}**"]
+        lines: list[str] = []
 
-        # roles is expected to be a list of dicts with 'name'
-        for role_index, role in enumerate(roles, start=1):
-            if isinstance(role, dict):
-                role_name = role.get("name", f"Role {role_index}")
-            else:
-                # fallback if role is just a string
-                role_name = str(role)
+        if not role_uuids:
+            lines.append("_No roles in this group yet._")
+        else:
+            for role_index, role_uuid in enumerate(role_uuids, start=1):
+                role_doc = await roles_col.find_one({"uuid": role_uuid})
+                if role_doc and "name" in role_doc:
+                    role_name = role_doc["name"]
+                else:
+                    role_name = f"Role {role_index}"
 
-            lines.append(f"{role_index}. {role_name}")
+                lines.append(f"{role_index}. {role_name}")
 
-        group_blocks.append("\n".join(lines))
+        # group uuid at bottom
+        lines.append(f"\n`uuid: {group_id}`")
 
-    groups_section = (
-        "\n\n".join(group_blocks) if group_blocks else "No groups attached."
+        party_embed = discord.Embed(
+            title=group_name,  # e.g. "Party 1"
+            description="\n".join(lines),
+            color=discord.Color.blurple(),
+        )
+        party_embeds.append(party_embed)
+
+    # --- plain text content header message ---
+    content_message = (
+        f"**{content.title}**\n"
+        f"Hosted by {interaction.user.mention}\n"
+        f"{content.description}\n"
+        f"**Date:** {date_str}\n"
+        f"**Time (UTC):** **{time_str}**\n"
+        f"**Location:** {location_str}"
     )
 
     # 1) Ephemeral confirmation for creator
     await interaction.response.send_message(
-        f"✅ Content created:\n"
-        f"**Title:** {content.title}\n"
-        f"**UUID:** `{content.uuid}`\n"
-        f"**Time (UTC):** {time_str}\n"
-        f"**Groups:** {', '.join(content.group_ids)}",
+        f"✅ Content created for **{date_str} {time_str} (UTC)**.",
         ephemeral=True,
+        delete_after=2,
     )
 
-    # 2) Public ping message with groups & roles
-    announcement = (
-        f"📢 **New content created!**\n"
-        f"Created by: {interaction.user.mention}\n"
-        f"**Title:** {content.title}\n"
-        f"**Description:** {content.description}\n"
-        f"**Time (UTC):** {time_str}\n"
-        f"**Location:** {location_str}\n\n"
-        f"{groups_section}"
+    # 2) Public message: plain text + party embeds
+    await interaction.response.send_message(
+        content=content_message, embeds=party_embeds
     )
-
-    await interaction.followup.send(announcement)
 
 
 if __name__ == "__main__":
