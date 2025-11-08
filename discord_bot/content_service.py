@@ -110,14 +110,11 @@ async def add_member_to_content(
     user_id: int,
     group_position: int,
     role_index: int,
-) -> None:
+) -> bool:
     """
-    Adds or updates a member entry in content.members inside the guild document.
+    Try to assign user to (group_position, role_index).
 
-    - content_uuid: UUID of the content
-    - user_id: Discord user id
-    - group_position: 1-based index of group in content.group_ids
-    - role_index: index of role inside that group
+    Returns True if assignment succeeded, False if the slot is already taken.
     """
     col = await _contents_collection()
 
@@ -139,7 +136,13 @@ async def add_member_to_content(
     role_ref = encode_role_ref(group_position, role_index, multi_groups)
     user_key = str(user_id)
 
-    # Update the specific content inside contents[]
+    members = content_doc.get("members", {})
+
+    # If this role_ref is already used by someone else, do NOT assign
+    if role_ref in members.values():
+        return False
+
+    # Otherwise, assign this user to this role
     await col.update_one(
         {"guild_id": guild_doc["guild_id"], "contents.uuid": content_uuid},
         {
@@ -150,6 +153,8 @@ async def add_member_to_content(
             }
         },
     )
+
+    return True
 
 
 async def remove_member_from_content(content_uuid: str, user_id: int) -> None:
