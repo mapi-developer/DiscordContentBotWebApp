@@ -157,17 +157,18 @@ async def content_create(
                 description="Group not found in database.",
                 color=discord.Color.blurple(),
             )
+            embed.set_footer(text=f"uuid: {group_id}")
             party_embeds.append(embed)
             continue
-
         # group_doc.get("name") or f"Party {idx}"
         group_name = f"Party {idx}"
         role_uuids = group_doc.get("roles", [])
 
-        lines: list[str] = []
+        # build role lines like "1. Tank", "2. Healer", ...
+        role_lines: list[str] = []
 
         if not role_uuids:
-            lines.append("_No roles in this group yet._")
+            role_lines.append("_No roles in this group yet._")
         else:
             for role_index, role_uuid in enumerate(role_uuids, start=1):
                 role_doc = await roles_col.find_one({"uuid": role_uuid})
@@ -176,16 +177,32 @@ async def content_create(
                 else:
                     role_name = f"Role {role_index}"
 
-                lines.append(f"{role_index}. {role_name}")
+                role_lines.append(f"❌ {role_index}. {role_name}")
 
-        # group uuid at bottom
-        lines.append(f"\n`uuid: {group_id}`")
-
+        # create embed
         party_embed = discord.Embed(
-            title=group_name,  # e.g. "Party 1"
-            description="\n".join(lines),
+            title=group_name,  # you can name groups "Party 1", "Party 2" in DB
             color=discord.Color.blurple(),
         )
+
+        if len(role_lines) <= 10:
+            # single column – just use description
+            col1 = "\n".join(role_lines)
+
+            party_embed.add_field(name="\u200b", value=col1, inline=True)
+        else:
+            # two columns:
+            # left: roles 1–10, right: roles 11–20 (or whatever remains)
+            col1 = "\n".join(role_lines[:10])
+            col2 = "\n".join(role_lines[10:])
+
+            # use zero-width names so Discord doesn’t show big headers
+            party_embed.add_field(name="\u200b", value=col1, inline=True)
+            party_embed.add_field(name="\u200b", value=col2, inline=True)
+
+        # group uuid in footer
+        party_embed.set_footer(text=f"uuid: {group_id}")
+
         party_embeds.append(party_embed)
 
     # --- plain text content header message ---
@@ -196,13 +213,6 @@ async def content_create(
         f"**Date:** {date_str}\n"
         f"**Time (UTC):** **{time_str}**\n"
         f"**Location:** {location_str}"
-    )
-
-    # 1) Ephemeral confirmation for creator
-    await interaction.response.send_message(
-        f"✅ Content created for **{date_str} {time_str} (UTC)**.",
-        ephemeral=True,
-        delete_after=2,
     )
 
     # 2) Public message: plain text + party embeds
