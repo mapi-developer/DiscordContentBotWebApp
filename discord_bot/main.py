@@ -68,6 +68,7 @@ async def ping(interaction: discord.Interaction):
     group2_id="UUID of the second group (optional)",
     group3_id="UUID of the third group (optional)",
     group4_id="UUID of the fourth group (optional)",
+    location="Location (optional, in-game or IRL)",
 )
 async def content_create(
     interaction: discord.Interaction,
@@ -79,6 +80,7 @@ async def content_create(
     group2_id: Optional[str] = None,
     group3_id: Optional[str] = None,
     group4_id: Optional[str] = None,
+    location: Optional[str] = None,
 ):
     if interaction.guild is None:
         await interaction.response.send_message(
@@ -112,7 +114,6 @@ async def content_create(
         if g:
             group_ids.append(g)
 
-    # Safety: enforce max 4 groups (should already be true)
     if len(group_ids) > 4:
         await interaction.response.send_message(
             "❌ You can select at most **4 groups** for one content.",
@@ -129,24 +130,38 @@ async def content_create(
         time_utc=time_utc_dt,
         title=title,
         description=description,
+        created_by=str(interaction.user.id),  # <- who created
         group_ids=group_ids,
         tags=[],
-        location=None,
-        created_by=str(interaction.user.id),
+        location=location,
     )
 
-    # Format for display: "10.09.25 18:00"
+    # Format time for display: "10.09.25 18:00"
     time_str = content.time_utc.strftime("%d.%m.%y %H:%M")
+    location_str = content.location or "Not specified"
 
+    # 1) Ephemeral confirmation just for the creator
     await interaction.response.send_message(
         f"✅ Content created:\n"
         f"**Title:** {content.title}\n"
         f"**UUID:** `{content.uuid}`\n"
-        f"**Guild:** {interaction.guild.name}\n"
         f"**Time (UTC):** {time_str}\n"
         f"**Groups:** {', '.join(content.group_ids)}",
         ephemeral=True,
     )
+
+    # 2) Public ping message in the same channel
+    announcement = (
+        f"📢 **New content created!**\n"
+        f"Created by: {interaction.user.mention}\n"
+        f"**Title:** {content.title}\n"
+        f"**Description:** {content.description}\n"
+        f"**Time (UTC):** {time_str}\n"
+        f"**Location:** {location_str}"
+    )
+
+    # This sends a normal message in the channel where the command was used
+    await interaction.followup.send(announcement)
 
 
 if __name__ == "__main__":
